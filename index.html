@@ -362,7 +362,7 @@
     };
   }
 
-  // LIVE UPDATES – staff see everything, guests only see their own records
+    // LIVE UPDATES – staff see everything, guests only see their own records
   const refreshMgmt = () => { if (!mv.hidden && !mv.contains(document.activeElement)) drawMgmt(); };
   let unsubs = [];
   function startWatching() {
@@ -370,4 +370,65 @@
     DB = {bookings:[], orders:[], chats:{}, msgs:[]};
     if (!USER) return;
     const scope = (name, field) => IS_STAFF ? collection(fs, name) : query(collection(fs, name), where(field, '==', USER.uid));
-    const sorted = snap => snap.docs.map(d => ({...d.data(), id: d.id})).sort((a, b) => (a.cre
+    const sorted = snap => snap.docs.map(d => ({...d.data(), id: d.id})).sort((a, b) => (a.created || 0) - (b.created || 0));
+    ['bookings', 'orders'].forEach(name => unsubs.push(onSnapshot(scope(name, 'uid'), snap => {
+      DB[name] = sorted(snap);
+      document.getElementById('dbmsg').textContent = '';
+      refreshMgmt();
+    }, dbErr)));
+    unsubs.push(onSnapshot(scope('messages', 'guest'), snap => {
+      DB.msgs = sorted(snap);
+      DB.chats = {};
+      DB.msgs.forEach(m => { const k = m.hotel + '|' + m.guest; (DB.chats[k] = DB.chats[k] || []).push(m); });
+      if (chatDlg.open) drawChat();
+      refreshMgmt();
+    }, dbErr));
+  }
+
+  // SIGN IN – Firebase Authentication (email and password)
+  const auth = getAuth(app);
+  const authDlg = document.getElementById('auth');
+  let signUp = false;
+  function askLogin() { document.getElementById('authMsg').textContent = ''; authDlg.showModal(); }
+  function setMode(s) {
+    signUp = s;
+    document.getElementById('authTitle').textContent = s ? 'Create account' : 'Sign in';
+    document.getElementById('authGo').textContent = s ? 'Create account' : 'Sign in';
+    document.getElementById('authSwap').textContent = s ? 'Already have an account? Sign in' : 'New here? Create an account';
+  }
+  const friendly = c => ({
+    'auth/invalid-credential': 'Wrong email or password.',
+    'auth/wrong-password': 'Wrong email or password.',
+    'auth/user-not-found': 'Wrong email or password.',
+    'auth/email-already-in-use': 'That email already has an account. Please sign in.',
+    'auth/weak-password': 'Use a password of 6 or more characters.',
+    'auth/invalid-email': 'Enter a valid email address.',
+    'auth/operation-not-allowed': 'Email sign-in is not turned on in Firebase yet.'
+  }[c] || 'Something went wrong. Please try again.');
+  document.getElementById('authBtn').onclick = () => USER ? signOut(auth) : askLogin();
+  document.getElementById('authSwap').onclick = () => setMode(!signUp);
+  document.getElementById('authClose').onclick = () => authDlg.close();
+  document.getElementById('authForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const em = document.getElementById('aEmail').value.trim(), pw = document.getElementById('aPass').value;
+    try {
+      if (signUp) await createUserWithEmailAndPassword(auth, em, pw);
+      else await signInWithEmailAndPassword(auth, em, pw);
+      document.getElementById('aPass').value = '';
+      authDlg.close();
+    } catch (err) { document.getElementById('authMsg').textContent = friendly(err.code); }
+  });
+  onAuthStateChanged(auth, async u => {
+    USER = u; IS_STAFF = false;
+    if (u) { try { IS_STAFF = (await getDoc(doc(fs, 'staff', u.uid))).exists(); } catch (e) {} }
+    document.getElementById('authBtn').textContent = u ? 'Sign out' : 'Sign in';
+    document.getElementById('who').textContent = u ? 'Signed in as ' + u.email + (IS_STAFF ? ' (staff)' : '') : '';
+    document.getElementById('vMgmt').hidden = !IS_STAFF;
+    if (!IS_STAFF) view(false);
+    startWatching();
+  });
+
+  render();
+</script>
+</body>
+</html>
