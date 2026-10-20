@@ -57,7 +57,8 @@
 <header><div class="wrap">
   <h1>Hotti<span>connect</span></h1>
   <p>Choose a hotel, then book a room, a meeting space, or order food.</p>
-  <div class="btns" style="margin-top:14px"><button class="ghost on" id="vGuest" type="button">Guest</button><button class="ghost" id="vMgmt" type="button">Management</button></div>
+  <div class="btns" style="margin-top:14px"><button class="ghost on" id="vGuest" type="button">Guest</button><button class="ghost" id="vMgmt" type="button" hidden>Management</button><button class="ghost" id="authBtn" type="button">Sign in</button></div>
+  <small id="who" style="display:block;margin-top:8px;color:var(--mut)"></small>
 </div></header>
 <p id="dbmsg" role="status" style="margin:0;padding:8px 20px;color:var(--acc)"></p>
 
@@ -124,9 +125,22 @@
   </form>
 </dialog>
 
+<!-- 5e. SIGN IN / CREATE ACCOUNT -->
+<dialog id="auth">
+  <form id="authForm">
+    <h2 id="authTitle" style="margin:0">Sign in</h2>
+    <div><label for="aEmail">Email</label><input id="aEmail" type="email" autocomplete="email" required></div>
+    <div><label for="aPass">Password (6 or more characters)</label><input id="aPass" type="password" autocomplete="current-password" minlength="6" required></div>
+    <p id="authMsg" role="status" style="color:var(--acc);margin:0;min-height:1.4em"></p>
+    <div class="row"><button type="button" class="ghost" id="authClose">Close</button><button type="submit" id="authGo">Sign in</button></div>
+    <button type="button" class="ghost" id="authSwap">New here? Create an account</button>
+  </form>
+</dialog>
+
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getFirestore, collection, addDoc, updateDoc, doc, onSnapshot, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { getFirestore, collection, addDoc, updateDoc, doc, getDoc, onSnapshot, writeBatch, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
   // 6. YOUR DATA – this is sample data. Replace it with real hotels later.
   const hotels = [
@@ -165,6 +179,7 @@
   }
 
   function openBooking(h) {
+    if (!USER) return askLogin();
     chosen = h;
     document.getElementById('bookTitle').textContent = 'Book at ' + h.name;
     document.getElementById('msg').textContent = '';
@@ -192,6 +207,7 @@
   let qty = [];
 
   function openFood(h) {
+    if (!USER) return askLogin();
     chosen = h;
     qty = MENU.map(() => 0);
     document.getElementById('foodTitle').textContent = 'Order food at ' + h.name;
@@ -246,11 +262,10 @@
   });
   const fs = getFirestore(app);
   let DB = {bookings:[], orders:[], chats:{}, msgs:[]};
-  // each phone gets a private guest id so guests only see their own chats
-  let GUEST = 'g' + Math.random().toString(36).slice(2, 8);
-  try { GUEST = localStorage.getItem('hc_guest') || GUEST; localStorage.setItem('hc_guest', GUEST); } catch (e) {}
+  let USER = null, IS_STAFF = false;   // set when someone signs in
   const dbErr = e => { console.error(e); document.getElementById('dbmsg').textContent = 'Could not reach the database. Check your internet connection and the Firestore rules.'; };
   async function addRecord(kind, r) {
+    r.uid = USER.uid; r.email = USER.email;
     r.status = 'Unpaid'; r.time = new Date().toLocaleString(); r.created = Date.now();
     const ref = await addDoc(collection(fs, kind), r);
     r.id = ref.id; return r;
@@ -284,20 +299,17 @@
   const chatDlg = document.getElementById('chat');
   let chatHotel = null;
   function drawChat() {
-    const box = document.getElementById('chatBox'), ms = DB.chats[chatHotel + '|' + GUEST] || [];
+    const box = document.getElementById('chatBox'), ms = DB.chats[chatHotel + '|' + USER.uid] || [];
     box.innerHTML = ms.length ? '' : '<p>Say hello to the hotel team.</p>';
     ms.forEach(m => { const p = document.createElement('p'); p.className = 'bubble ' + (m.from === 'guest' ? 'me' : 'them'); p.textContent = m.text; box.appendChild(p); });
     box.scrollTop = box.scrollHeight;
   }
-  function openChat(h) { chatHotel = h.name; document.getElementById('chatTitle').textContent = 'Chat with ' + h.name; drawChat(); chatDlg.showModal(); }
+  function openChat(h) { if (!USER) return askLogin(); chatHotel = h.name; document.getElementById('chatTitle').textContent = 'Chat with ' + h.name; drawChat(); chatDlg.showModal(); }
   document.getElementById('chatForm').addEventListener('submit', e => {
     e.preventDefault();
     const i = document.getElementById('chatIn'), t = i.value.trim(), hn = chatHotel;
     if (!t) return;
-    post(hn, GUEST, 'guest', t); i.value = '';
-    setTimeout(() => {
-      if (!(DB.chats[hn + '|' + GUEST] || []).some(m => m.from === 'mgmt')) post(hn, GUEST, 'mgmt', 'Thanks for your message. A team member will reply shortly.');
-    }, 900);
+    post(hn, USER.uid, 'guest', t); i.value = '';
   });
   document.getElementById('chatClose').onclick = () => chatDlg.close();
 
@@ -310,7 +322,7 @@
     if (m) drawMgmt();
   }
   document.getElementById('vGuest').onclick = () => view(false);
-  document.getElementById('vMgmt').onclick = () => view(true);
+  document.getElementById('vMgmt').onclick = () => { if (IS_STAFF) view(true); };
 
   function drawMgmt() {
     const all = [...DB.bookings, ...DB.orders];
@@ -350,23 +362,12 @@
     };
   }
 
-  // LIVE UPDATES – the page refreshes by itself when the database changes
+  // LIVE UPDATES – staff see everything, guests only see their own records
   const refreshMgmt = () => { if (!mv.hidden && !mv.contains(document.activeElement)) drawMgmt(); };
-  const watch = (name) => onSnapshot(collection(fs, name), snap => {
-    DB[name] = snap.docs.map(d => ({...d.data(), id: d.id})).sort((a, b) => (a.created || 0) - (b.created || 0));
-    document.getElementById('dbmsg').textContent = '';
-    refreshMgmt();
-  }, dbErr);
-  watch('bookings'); watch('orders');
-  onSnapshot(collection(fs, 'messages'), snap => {
-    DB.msgs = snap.docs.map(d => ({...d.data(), id: d.id})).sort((a, b) => (a.created || 0) - (b.created || 0));
-    DB.chats = {};
-    DB.msgs.forEach(m => { const k = m.hotel + '|' + m.guest; (DB.chats[k] = DB.chats[k] || []).push(m); });
-    if (chatDlg.open) drawChat();
-    refreshMgmt();
-  }, dbErr);
-
-  render();
-</script>
-</body>
-</html>
+  let unsubs = [];
+  function startWatching() {
+    unsubs.forEach(u => u()); unsubs = [];
+    DB = {bookings:[], orders:[], chats:{}, msgs:[]};
+    if (!USER) return;
+    const scope = (name, field) => IS_STAFF ? collection(fs, name) : query(collection(fs, name), where(field, '==', USER.uid));
+    const sorted = snap => snap.docs.map(d => ({...d.data(), id: d.id}
