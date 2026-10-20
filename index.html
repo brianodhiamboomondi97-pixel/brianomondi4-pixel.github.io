@@ -313,7 +313,7 @@
   });
   document.getElementById('chatClose').onclick = () => chatDlg.close();
 
-  // MANAGEMENT VIEW – see all activity (demo: anyone can open it, no login yet)
+  // MANAGEMENT VIEW – only staff accounts can open this
   const gv = document.getElementById('guest'), mv = document.getElementById('mgmt');
   function view(m) {
     gv.hidden = m; mv.hidden = !m;
@@ -370,4 +370,4 @@
     DB = {bookings:[], orders:[], chats:{}, msgs:[]};
     if (!USER) return;
     const scope = (name, field) => IS_STAFF ? collection(fs, name) : query(collection(fs, name), where(field, '==', USER.uid));
-    const sorted = snap => snap.docs.map(d => ({...d.data(), id: d.id}
+    const sorted = snap => snap.docs.map(d => ({...d.data(), id: d.id})).sort((a, b) => (a.cre
