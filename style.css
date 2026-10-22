@@ -1,5 +1,5 @@
 /* COLOURS – change these to restyle the whole site */
-:root{--bg:#0a2016;--card:#0f2c1e;--line:#25523a;--fg:#eaf7ee;--mut:#9dbba9;--acc:#6fe3a2}
+:root{--bg:#f4f8ff;--card:#ffffff;--line:#c3d4f0;--fg:#10243e;--mut:#5a6b85;--acc:#1a5fe0}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font:17px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif}
 header{padding:28px 20px;border-bottom:1px solid var(--line)}
