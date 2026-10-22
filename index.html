@@ -98,6 +98,6 @@
   </form>
 </dialog>
 
-<script type="module" src="app.js"></script>
+<script type="module" src="app.js"><script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}))</script></script>
 </body>
   </html>
