@@ -32,7 +32,10 @@
     <div><label for="name">Your name</label><input id="name" required></div>
     <div><label for="type">What are you booking?</label>
       <select id="type"><option>Room</option><option>Meeting space</option></select></div>
-    <div><label for="date">Date</label><input id="date" type="date" required></div>
+    <div><label for="date">Check-in date</label><input id="date" type="date" required></div>
+<div><label for="date2">Check-out date</label><input id="date2" type="date" required></div>
+<div><label for="guests">Number of guests</label><input id="guests" type="number" min="1" max="500" value="1" required></div>
+<p class="total" id="bookTotal"></p>
     <p id="msg" role="status"></p>
     <div class="row"><button type="button" class="ghost" id="close">Close</button><button type="submit">Confirm booking</button></div>
   </form>
