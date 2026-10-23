@@ -12,15 +12,18 @@ function drawCities() {
   [...new Set(S.hotels.map(h => h.city).filter(Boolean))].forEach(c => sel.add(new Option(c, c)));
   sel.value = cur;
 }
+const intl = p => { const d = String(p || '').replace(/\D/g, ''); return d.startsWith('0') ? '254' + d.slice(1) : d; };
 function render() {
   const q = $('search').value.toLowerCase(), c = $('city').value, list = $('list');
   const shown = S.hotels.filter(h => (!c || h.city === c) && ((h.name || '') + ' ' + (h.city || '')).toLowerCase().includes(q));
   list.innerHTML = shown.length ? '' : '<p>No hotels to show yet.</p>';
   shown.forEach(h => {
     const pic = /^https:\/\//.test(h.photo || '') ? `<img class="photo" src="${esc(h.photo)}" alt="" loading="lazy">` : '';
+    const n = intl(h.phone);
+    const contact = n ? `<div class="btns" style="margin-bottom:10px"><a class="ghost" href="tel:+${n}">Call</a><a class="ghost" href="https://wa.me/${n}" target="_blank" rel="noopener">WhatsApp</a></div>` : '';
     const d = document.createElement('div');
     d.className = 'hotel';
-    d.innerHTML = `${pic}<h2>${esc(h.name)}</h2><p>${esc(h.city)} · ★ ${esc(h.rating || '–')}<br>${esc(h.desc)}</p>
+    d.innerHTML = `${pic}<h2>${esc(h.name)}</h2><p>${esc(h.city)} · ★ ${esc(h.rating || '–')}<br>${esc(h.desc)}</p>${contact}
       <div class="row"><strong>${money(h.price)} / night</strong><div class="btns"><button class="ghost" data-a="chat">Chat</button><button class="ghost" data-a="food">Order food</button><button data-a="book">Book</button></div></div>`;
     d.querySelector('[data-a=book]').onclick = () => openBooking(h);
     d.querySelector('[data-a=food]').onclick = () => openFood(h);
@@ -39,19 +42,40 @@ async function addRecord(kind, r) {
 }
 
 // ---------- BOOKING ----------
+const today = () => new Date().toISOString().slice(0, 10);
+function bookCost() {
+  const t = $('type').value.toLowerCase(), d1 = $('date').value, d2 = $('date2').value;
+  const unit = t === 'room' ? Number(chosen.price) || 0 : Number(chosen.meeting) || 5000;
+  const n = d1 && d2 ? Math.max(1, Math.round((new Date(d2) - new Date(d1)) / 86400000)) : 1;
+  return { t, n, unit, total: unit * n };
+}
+function drawBookTotal() {
+  if (!chosen) return;
+  const c = bookCost(), word = c.t === 'room' ? (c.n === 1 ? 'night' : 'nights') : (c.n === 1 ? 'day' : 'days');
+  $('bookTotal').textContent = `${c.n} ${word} × ${money(c.unit)} = ${money(c.total)}`;
+}
 function openBooking(h) {
   if (!S.user) return askLogin();
   chosen = h;
   $('bookTitle').textContent = 'Book at ' + h.name;
   $('msg').textContent = '';
+  $('date').min = today(); $('date2').min = today();
+  $('date').value = ''; $('date2').value = ''; $('guests').value = 1;
+  drawBookTotal();
   $('book').showModal();
 }
+['type', 'date', 'date2'].forEach(id => $(id).addEventListener('change', () => {
+  if (id === 'date') $('date2').min = $('date').value || today();
+  drawBookTotal();
+}));
 $('bookForm').addEventListener('submit', async e => {
   e.preventDefault();
-  const t = $('type').value.toLowerCase();
+  const d1 = $('date').value, d2 = $('date2').value;
+  if (d2 < d1) { $('msg').textContent = 'Check-out cannot be before check-in.'; return; }
+  const c = bookCost();
   try {
-    const rec = await addRecord('bookings', { who: $('name').value.trim(), hotel: chosen.name, hotelId: chosen.id, what: t, date: $('date').value,
-      amount: t === 'room' ? Number(chosen.price) || 0 : Number(chosen.meeting) || 5000 });
+    const rec = await addRecord('bookings', { who: $('name').value.trim(), hotel: chosen.name, hotelId: chosen.id, what: c.t,
+      date: d1, checkout: d2, guests: Number($('guests').value) || 1, nights: c.n, amount: c.total });
     $('book').close();
     openPay('bookings', rec);
   } catch (err) { $('msg').textContent = 'Could not save your booking. Check your internet and try again.'; }
