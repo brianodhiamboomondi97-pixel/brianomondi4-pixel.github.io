@@ -82,7 +82,13 @@
   </form>
 </dialog>
 
-<dialog id="hotelDlg">
+<dialog id="mine">
+  <form method="dialog">
+    <h2 style="margin:0">My bookings and orders</h2>
+    <div id="mineList"></div>
+    <div class="row"><button type="button" class="ghost" id="mineClose">Close</button></div>
+  </form>
+</dialog><dialog id="hotelDlg">
   <form id="hotelForm">
     <h2 id="hotelTitle" style="margin:0">Hotel</h2>
     <div><label for="hn">Hotel name</label><input id="hn" required></div>
