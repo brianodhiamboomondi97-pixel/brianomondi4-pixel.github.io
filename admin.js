@@ -55,8 +55,12 @@ export function drawAdmin() {
   const mine = owner ? S.hotels : S.hotels.filter(h => h.id === S.staff.hotel);
   const all = [...D.bookings, ...D.orders];
   const sum = f => all.filter(f).reduce((s, r) => s + (r.amount || 0), 0);
-  const rows = (a, f) => a.length ? a.slice().reverse().map(r =>
-    `<div class="rec"><b>${f(r)}</b><br><small>${esc(r.time)} · ${money(r.amount)} · ${esc(r.status)}${r.method ? ' (' + esc(r.method) + ')' : ''}</small></div>`).join('') : '<p>Nothing yet.</p>';
+  const rows = (a, f) => a.length ? a.slice().reverse().map(r => {
+    const kind = r.items !== undefined ? 'orders' : 'bookings';
+    const opts = kind === 'orders' ? ['Preparing', 'Delivered'] : ['Confirmed', 'Cancelled'];
+    const btns = opts.map(o => `<button class="ghost" type="button" data-k="${kind}" data-id="${esc(r.id)}" data-st="${o}">${o}</button>`).join('');
+    return `<div class="rec"><b>${f(r)}</b><br><small>${esc(r.time)} · ${money(r.amount)} · ${esc(r.status)}${r.method ? ' (' + esc(r.method) + ')' : ''} · <b>${esc(r.state || (kind === 'orders' ? 'Received' : 'Pending'))}</b></small><div class="btns" style="margin-top:8px">${btns}</div></div>`;
+  }).join('') : '<p>Nothing yet.</p>';
 
   mv.innerHTML = `<h2>${owner ? 'Hotels' : 'Your hotel'}</h2><div id="hotelsBox"></div>
     ${owner ? '<p class="btns"><button id="addH" type="button">Add hotel</button><button id="seed" class="ghost" type="button">Add sample hotels</button></p>' : ''}
@@ -67,6 +71,10 @@ export function drawAdmin() {
     <h3>Food orders</h3>${rows(D.orders, r => `${esc(r.items)} → ${esc(r.to)}, ${esc(r.hotel)}`)}
     <h3>Customer chats</h3><div id="chats"></div>
     ${owner ? '<p><button class="ghost" id="clr" type="button">Delete all bookings, orders and chats</button></p>' : ''}`;
+
+  // booking and order status buttons
+  mv.querySelectorAll('[data-st]').forEach(b => b.onclick = () =>
+    updateDoc(doc(fs, b.dataset.k, b.dataset.id), { state: b.dataset.st }).catch(dbErr));
 
   // hotels (with Edit buttons)
   const hb = $('hotelsBox');
@@ -117,4 +125,4 @@ export function drawAdmin() {
       await b.commit();
     } catch (err) { dbErr(err); }
   };
-    }
+                    }
