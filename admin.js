@@ -1,4 +1,4 @@
-import { collection, addDoc, updateDoc, doc, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { collection, addDoc, updateDoc, deleteDoc, doc, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { fs, S, $, money, esc, dbErr, post, isOwner } from "./shared.js";
 
 const DISHES = [
