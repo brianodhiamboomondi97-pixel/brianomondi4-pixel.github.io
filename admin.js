@@ -12,6 +12,7 @@ const SAMPLE = [
   {name:'City Centre Inn', city:'Nairobi', price:5500, meeting:3000, rating:4.1, photo:'', desc:'Affordable rooms and a small meeting space.', menu:DISHES}
 ];
 let editId = null;
+const when = r => esc(r.date) + (r.checkout && r.checkout !== r.date ? ' to ' + esc(r.checkout) : '') + (r.guests ? ' · ' + esc(r.guests) + ' guest' + (r.guests > 1 ? 's' : '') : '');
 
 // "Ugali & fish, 900" per line  ->  [{n:'Ugali & fish', p:900}]
 const parseMenu = t => t.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
@@ -23,7 +24,7 @@ function openHotel(h) {
   editId = h ? h.id : null;
   h = h || {};
   $('hotelTitle').textContent = editId ? 'Edit hotel' : 'Add hotel';
-  $('hn').value = h.name || ''; $('hc').value = h.city || '';
+  $('hn').value = h.name || ''; $('hc').value = h.city || ''; $('hphone').value = h.phone || '';
   $('hp').value = h.price || ''; $('hm').value = h.meeting || '';
   $('hr').value = h.rating || ''; $('hph').value = h.photo || '';
   $('hd').value = h.desc || '';
@@ -37,7 +38,7 @@ export function initAdmin() {
   $('hotelForm').addEventListener('submit', async e => {
     e.preventDefault();
     const data = {
-      name: $('hn').value.trim(), city: $('hc').value.trim(),
+      name: $('hn').value.trim(), city: $('hc').value.trim(), phone: $('hphone').value.trim(),
       price: Number($('hp').value) || 0, meeting: Number($('hm').value) || 5000,
       rating: Number($('hr').value) || 0, photo: $('hph').value.trim(),
       desc: $('hd').value.trim(), menu: parseMenu($('hmenu').value)
@@ -67,7 +68,7 @@ export function drawAdmin() {
     <h2>Activity</h2>
     <div class="stats"><div><b>${D.bookings.length}</b>Bookings</div><div><b>${D.orders.length}</b>Food orders</div>
     <div><b>${money(sum(r => r.status === 'Paid'))}</b>Paid</div><div><b>${money(sum(r => r.status !== 'Paid'))}</b>Unpaid</div></div>
-    <h3>Bookings</h3>${rows(D.bookings, r => `${esc(r.who)} – ${esc(r.what)} at ${esc(r.hotel)} on ${esc(r.date)}`)}
+    <h3>Bookings</h3>${rows(D.bookings, r => `${esc(r.who)} – ${esc(r.what)} at ${esc(r.hotel)} on ${when(r)}`)}
     <h3>Food orders</h3>${rows(D.orders, r => `${esc(r.items)} → ${esc(r.to)}, ${esc(r.hotel)}`)}
     <h3>Customer chats</h3><div id="chats"></div>
     ${owner ? '<p><button class="ghost" id="clr" type="button">Delete all bookings, orders and chats</button></p>' : ''}`;
@@ -125,4 +126,4 @@ export function drawAdmin() {
       await b.commit();
     } catch (err) { dbErr(err); }
   };
-                    }
+                                                                }
