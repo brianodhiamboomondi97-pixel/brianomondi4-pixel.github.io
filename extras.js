@@ -12,13 +12,14 @@ $('authForgot').onclick = async () => {
 };
 
 // ---------- MY BOOKINGS AND ORDERS ----------
+const when = r => esc(r.date) + (r.checkout && r.checkout !== r.date ? ' to ' + esc(r.checkout) : '') + (r.guests ? ' · ' + esc(r.guests) + ' guest' + (r.guests > 1 ? 's' : '') : '');
 const dlg = $('mine');
 function draw() {
   const me = S.user ? S.user.uid : null;
   const mine = [...S.DB.bookings.map(r => ({ ...r, kind: 'booking' })), ...S.DB.orders.map(r => ({ ...r, kind: 'order' }))]
     .filter(r => r.uid === me).sort((a, b) => (b.created || 0) - (a.created || 0));
   $('mineList').innerHTML = mine.length ? mine.map(r => `<div class="rec"><b>${r.kind === 'booking'
-      ? esc(r.what) + ' at ' + esc(r.hotel) + ' on ' + esc(r.date)
+      ? esc(r.what) + ' at ' + esc(r.hotel) + ' on ' + when(r)
       : esc(r.items) + ' · ' + esc(r.hotel)}</b><br><small>${esc(r.time)} · ${money(r.amount)}<br>Status: <b>${esc(r.state || (r.kind === 'order' ? 'Received' : 'Pending'))}</b> · Payment: <b>${esc(r.status)}</b></small></div>`).join('')
     : '<p>You have no bookings or orders yet.</p>';
 }
@@ -33,3 +34,7 @@ setInterval(() => {
   const sig = JSON.stringify([S.DB.bookings, S.DB.orders]);
   if (sig !== last) { last = sig; draw(); }
 }, 1500);
+
+// ---------- PRIVACY NOTICE ----------
+$('privLink').onclick = e => { e.preventDefault(); $('privacy').showModal(); };
+$('privClose').onclick = () => $('privacy').close();
