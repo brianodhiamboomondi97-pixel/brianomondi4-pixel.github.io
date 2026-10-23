@@ -4,9 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Hotticonnect – Find and book hotels</title>
-<link rel="stylesheet" href="style.css"><link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+<link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1a5fe0">
-<link rel="icon" href="icon.svg" type="image/svg+xml"></head>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+</head>
 <body>
 
 <header><div class="wrap">
@@ -23,7 +25,8 @@
     <select id="city" aria-label="Filter by city"><option value="">All cities</option></select>
   </div>
   <div id="list"></div>
-<p style="margin-top:24px;text-align:center"><a href="#" id="privLink" style="color:var(--mut)">Privacy notice</a></p></main>
+  <p style="margin-top:24px;text-align:center"><a href="#" id="privLink" style="color:var(--mut)">Privacy notice</a></p>
+</main>
 <main class="wrap" id="mgmt" hidden></main>
 
 <dialog id="book">
@@ -33,9 +36,9 @@
     <div><label for="type">What are you booking?</label>
       <select id="type"><option>Room</option><option>Meeting space</option></select></div>
     <div><label for="date">Check-in date</label><input id="date" type="date" required></div>
-<div><label for="date2">Check-out date</label><input id="date2" type="date" required></div>
-<div><label for="guests">Number of guests</label><input id="guests" type="number" min="1" max="500" value="1" required></div>
-<p class="total" id="bookTotal"></p>
+    <div><label for="date2">Check-out date</label><input id="date2" type="date" required></div>
+    <div><label for="guests">Number of guests</label><input id="guests" type="number" min="1" max="500" value="1" required></div>
+    <p class="total" id="bookTotal"></p>
     <p id="msg" role="status"></p>
     <div class="row"><button type="button" class="ghost" id="close">Close</button><button type="submit">Confirm booking</button></div>
   </form>
@@ -81,7 +84,8 @@
     <div><label for="aPass">Password (6 or more characters)</label><input id="aPass" type="password" autocomplete="current-password" minlength="6" required></div>
     <p id="authMsg" role="status" style="color:var(--acc);margin:0;min-height:1.4em"></p>
     <div class="row"><button type="button" class="ghost" id="authClose">Close</button><button type="submit" id="authGo">Sign in</button></div>
-    <button type="button" class="ghost" id="authSwap">New here? Create an account</button><button type="button" class="ghost" id="authForgot">Forgot password?</button>
+    <button type="button" class="ghost" id="authSwap">New here? Create an account</button>
+    <button type="button" class="ghost" id="authForgot">Forgot password?</button>
   </form>
 </dialog>
 
@@ -91,6 +95,8 @@
     <div id="mineList"></div>
     <div class="row"><button type="button" class="ghost" id="mineClose">Close</button></div>
   </form>
+</dialog>
+
 <dialog id="privacy">
   <form method="dialog">
     <h2 style="margin:0">Privacy notice</h2>
@@ -102,34 +108,16 @@
     <p style="color:var(--mut);font-size:14px">Hotticonnect is a demo. Payments shown are not real.</p>
     <div class="row"><button type="button" class="ghost" id="privClose">Close</button></div>
   </form>
-<dialog id="privacy">
-  <form method="dialog">
-    <h2 style="margin:0">Privacy notice</h2>
-    <p><b>What we keep:</b> your email (for sign-in), the details you enter when you book or order (name, dates, guests, room or table number), and your chat messages.</p>
-    <p><b>Who can see it:</b> you, the staff of the hotel you booked with or messaged, and the Hotticonnect owner.</p>
-    <p><b>Why:</b> only to handle your bookings, orders and messages. We do not sell your information.</p>
-    <p><b>Where:</b> it is stored with Google Firebase.</p>
-    <p><b>Your choices:</b> to see or delete your information, email brianodhiamboomondi97@gmail.com.</p>
-    <p style="color:var(--mut);font-size:14px">Hotticonnect is a demo. Payments shown are not real.</p>
-    <div class="row"><button type="button" class="ghost" id="privClose">Close</button></div>
-  </form>
-<dialog id="privacy">
-  <form method="dialog">
-    <h2 style="margin:0">Privacy notice</h2>
-    <p><b>What we keep:</b> your email (for sign-in), the details you enter when you book or order (name, dates, guests, room or table number), and your chat messages.</p>
-    <p><b>Who can see it:</b> you, the staff of the hotel you booked with or messaged, and the Hotticonnect owner.</p>
-    <p><b>Why:</b> only to handle your bookings, orders and messages. We do not sell your information.</p>
-    <p><b>Where:</b> it is stored with Google Firebase.</p>
-    <p><b>Your choices:</b> to see or delete your information, email brianodhiamboomondi97@gmail.com.</p>
-    <p style="color:var(--mut);font-size:14px">Hotticonnect is a demo. Payments shown are not real.</p>
-    <div class="row"><button type="button" class="ghost" id="privClose">Close</button></div>
-  </form>
-</dialog></dialog><dialog id="hotelDlg">
+</dialog>
+
+<dialog id="hotelDlg">
   <form id="hotelForm">
     <h2 id="hotelTitle" style="margin:0">Hotel</h2>
     <div><label for="hn">Hotel name</label><input id="hn" required></div>
-    <div><label for="hc">City</label><input id="hc" required></div>  <div><label for="hp">Room price per night (KSh)</label><input id="hp" type="number" min="0" required></div>
-   <div><label for="hphone">Hotel phone (for Call and WhatsApp)</label><input id="hphone" type="tel" placeholder="0712 345 678"></div> <div><label for="hm">Meeting space price (KSh)</label><input id="hm" type="number" min="0"></div>
+    <div><label for="hc">City</label><input id="hc" required></div>
+    <div><label for="hphone">Hotel phone (for Call and WhatsApp)</label><input id="hphone" type="tel" placeholder="0712 345 678"></div>
+    <div><label for="hp">Room price per night (KSh)</label><input id="hp" type="number" min="0" required></div>
+    <div><label for="hm">Meeting space price (KSh)</label><input id="hm" type="number" min="0"></div>
     <div><label for="hr">Rating (0 to 5)</label><input id="hr" type="number" min="0" max="5" step="0.1"></div>
     <div><label for="hph">Photo link (starts with https://)</label><input id="hph" type="url"></div>
     <div><label for="hd">Description</label><textarea id="hd" rows="2"></textarea></div>
@@ -139,6 +127,8 @@
   </form>
 </dialog>
 
-<script type="module" src="app.js"><script type="module" src="extras.js"></script><script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}))</script></script>
+<script type="module" src="app.js"></script>
+<script type="module" src="extras.js"></script>
+<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}))</script>
 </body>
   </html>
