@@ -85,7 +85,16 @@ export function drawAdmin() {
     w.innerHTML = `<b>${esc(h.name)}</b> · ${esc(h.city)}<br><small>Hotel ID: ${esc(h.id)}<br>${(h.menu || []).length} menu items</small><br>`;
     const b = document.createElement('button'); b.className = 'ghost'; b.type = 'button'; b.textContent = 'Edit'; b.style.marginTop = '8px';
     b.onclick = () => openHotel(h);
-    w.appendChild(b); hb.appendChild(w);
+        w.appendChild(b);
+    if (owner) {
+      const x = document.createElement('button'); x.className = 'ghost'; x.type = 'button'; x.textContent = 'Delete'; x.style.cssText = 'margin:8px 0 0 8px;color:#c0392b';
+      x.onclick = async () => {
+        if (!confirm('Delete "' + h.name + '"? Bookings made at this hotel stay in the database.')) return;
+        try { await deleteDoc(doc(fs, 'hotels', h.id)); } catch (err) { dbErr(err); }
+      };
+      w.appendChild(x);
+    }
+    hb.appendChild(w);
   });
   if ($('addH')) $('addH').onclick = () => openHotel(null);
   if ($('seed')) $('seed').onclick = async () => {
