@@ -69,3 +69,8 @@ form input,form select,form textarea{width:100%}
 #mapBox{height:340px;border-radius:12px;margin:4px 0}
 #mapDlg{width:min(94vw,560px)}
 .leaflet-container{font:inherit}
+.hotel .row{flex-direction:row;align-items:center;gap:12px}
+.cta{display:flex;gap:8px}
+.cta button{padding:10px 18px}
+.more{display:flex;flex-wrap:wrap;gap:8px;margin:14px 18px 0}
+.more button.ghost{border-radius:999px;min-height:38px;padding:8px 14px;font-size:14px}
