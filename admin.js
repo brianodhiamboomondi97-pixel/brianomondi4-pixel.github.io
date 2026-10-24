@@ -12,6 +12,7 @@ const SAMPLE = [
   {name:'City Centre Inn', city:'Nairobi', price:5500, meeting:3000, rating:4.1, photo:'', desc:'Affordable rooms and a small meeting space.', menu:DISHES}
 ];
 let editId = null;
+const parseLoc = t => { const m = String(t || '').match(/(-?\d+(?:\.\d+)?)\s*[,;\s]\s*(-?\d+(?:\.\d+)?)/); return m && Math.abs(m[1]) <= 90 && Math.abs(m[2]) <= 180 ? { lat: Number(m[1]), lng: Number(m[2]) } : { lat: null, lng: null }; };
 const when = r => esc(r.date) + (r.checkout && r.checkout !== r.date ? ' to ' + esc(r.checkout) : '') + (r.guests ? ' · ' + esc(r.guests) + ' guest' + (r.guests > 1 ? 's' : '') : '');
 
 // "Ugali & fish, 900" per line  ->  [{n:'Ugali & fish', p:900}]
@@ -28,6 +29,7 @@ function openHotel(h) {
   $('hp').value = h.price || ''; $('hm').value = h.meeting || '';
   $('hr').value = h.rating || ''; $('hph').value = h.photo || '';
   $('hd').value = h.desc || '';
+  $('hloc').value = h.lat != null && h.lng != null ? h.lat + ', ' + h.lng : '';
   $('hmenu').value = (h.menu || []).map(m => m.n + ', ' + m.p).join('\n');
   $('hMsg').textContent = '';
   $('hotelDlg').showModal();
@@ -41,7 +43,7 @@ export function initAdmin() {
       name: $('hn').value.trim(), city: $('hc').value.trim(), phone: $('hphone').value.trim(),
       price: Number($('hp').value) || 0, meeting: Number($('hm').value) || 5000,
       rating: Number($('hr').value) || 0, photo: $('hph').value.trim(),
-      desc: $('hd').value.trim(), menu: parseMenu($('hmenu').value)
+      desc: $('hd').value.trim(), menu: parseMenu($('hmenu').value), ...parseLoc($('hloc').value)
     };
     try {
       if (editId) await updateDoc(doc(fs, 'hotels', editId), data);
@@ -85,7 +87,7 @@ export function drawAdmin() {
     w.innerHTML = `<b>${esc(h.name)}</b> · ${esc(h.city)}<br><small>Hotel ID: ${esc(h.id)}<br>${(h.menu || []).length} menu items</small><br>`;
     const b = document.createElement('button'); b.className = 'ghost'; b.type = 'button'; b.textContent = 'Edit'; b.style.marginTop = '8px';
     b.onclick = () => openHotel(h);
-        w.appendChild(b);
+    w.appendChild(b);
     if (owner) {
       const x = document.createElement('button'); x.className = 'ghost'; x.type = 'button'; x.textContent = 'Delete'; x.style.cssText = 'margin:8px 0 0 8px;color:#c0392b';
       x.onclick = async () => {
@@ -135,4 +137,4 @@ export function drawAdmin() {
       await b.commit();
     } catch (err) { dbErr(err); }
   };
-                                                                }
+    }
