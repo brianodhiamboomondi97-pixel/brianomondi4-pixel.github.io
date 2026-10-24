@@ -49,3 +49,6 @@ a.ghost{display:inline-block;padding:11px 13px;border-radius:6px;text-decoration
 .hotel .row{flex-direction:column;align-items:stretch;gap:12px}
 .hotel .row .btns{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .hotel .row .btns button{padding:11px 6px}
+#mapBox{height:340px;border-radius:8px;margin:4px 0}
+#mapDlg{width:min(94vw,560px)}
+.leaflet-container{font:inherit}
