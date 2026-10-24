@@ -27,12 +27,15 @@ function render() {
   shown.forEach(h => {
     const pic = /^https:\/\//.test(h.photo || '') ? `<img class="photo" src="${esc(h.photo)}" alt="" loading="lazy">` : '';
     const n = intl(h.phone), rt = ratingOf(h);
-    const contact = n ? `<div class="btns" style="margin-bottom:10px"><a class="ghost" href="tel:+${n}">Call</a><a class="ghost" href="https://wa.me/${n}" target="_blank" rel="noopener">WhatsApp</a></div>` : '';
+    const call = n ? `<a class="ghost" href="tel:+${n}">Call</a>` : '';
+    const wa = n ? `<a class="ghost" href="https://wa.me/${n}" target="_blank" rel="noopener">WhatsApp</a>` : '';
     const d = document.createElement('div');
     d.className = 'hotel';
     d.innerHTML = `${pic}<h2>${esc(h.name)}</h2><p>${esc(h.city)} · ★ ${rt.avg ? rt.avg.toFixed(1) : '–'}${rt.n ? ' (' + rt.n + ' review' + (rt.n > 1 ? 's' : '') + ')' : ''}<br>${esc(h.desc)}</p>
-      <p style="margin:0 0 10px"><a href="#" data-a="reviews" style="color:var(--acc)">Reviews</a> · <a href="#" data-a="map" style="color:var(--acc)">Map and directions</a></p>${contact}
-      <div class="row"><strong>${money(h.price)} / night</strong><div class="btns"><button class="ghost" data-a="chat">Chat</button><button class="ghost" data-a="food">Order food</button><button data-a="book">Book</button></div></div>`;
+      <div class="row"><strong>${money(h.price)} <small style="font-weight:400;color:var(--mut)">/ night</small></strong><div class="cta"><button class="ghost" data-a="more" aria-expanded="false">More</button><button data-a="book">Book</button></div></div>
+      <div class="more" hidden><button class="ghost" data-a="chat">Chat</button><button class="ghost" data-a="food">Order food</button><a class="ghost" href="#" data-a="reviews">Reviews</a><a class="ghost" href="#" data-a="map">Map</a>${call}${wa}</div>`;
+    const more = d.querySelector('.more'), mb = d.querySelector('[data-a=more]');
+    mb.onclick = () => { more.hidden = !more.hidden; mb.textContent = more.hidden ? 'More' : 'Less'; mb.setAttribute('aria-expanded', String(!more.hidden)); };
     d.querySelector('[data-a=book]').onclick = () => openBooking(h);
     d.querySelector('[data-a=food]').onclick = () => openFood(h);
     d.querySelector('[data-a=chat]').onclick = () => openChat(h);
