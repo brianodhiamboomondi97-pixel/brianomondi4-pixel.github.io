@@ -8,6 +8,7 @@
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1a5fe0">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
 </head>
 <body>
 
@@ -26,6 +27,7 @@
     <input id="maxp" type="number" min="0" placeholder="Max price (KSh)" aria-label="Maximum price">
     <select id="sort" aria-label="Sort hotels"><option value="">Sort: A to Z</option><option value="price">Price: low to high</option><option value="priceDesc">Price: high to low</option><option value="rating">Best rated</option></select>
   </div>
+  <p style="margin:0 0 14px"><button class="ghost" id="allMap" type="button">Map of all hotels</button></p>
   <div id="list"></div>
   <p style="margin-top:24px;text-align:center"><a href="#" id="privLink" style="color:var(--mut)">Privacy notice</a></p>
 </main>
@@ -128,12 +130,22 @@
   </div>
 </dialog>
 
+<dialog id="mapDlg">
+  <div style="display:grid;gap:8px">
+    <h2 id="mapTitle" style="margin:0">Map</h2>
+    <div id="mapBox"></div>
+    <p id="mapNote" style="color:var(--mut);margin:0"></p>
+    <div class="row"><button type="button" class="ghost" id="mapClose">Close</button><a class="ghost" id="mapDir" href="#" target="_blank" rel="noopener">Get directions</a></div>
+  </div>
+</dialog>
+
 <dialog id="hotelDlg">
   <form id="hotelForm">
     <h2 id="hotelTitle" style="margin:0">Hotel</h2>
     <div><label for="hn">Hotel name</label><input id="hn" required></div>
     <div><label for="hc">City</label><input id="hc" required></div>
     <div><label for="hphone">Hotel phone (for Call and WhatsApp)</label><input id="hphone" type="tel" placeholder="0712 345 678"></div>
+    <div><label for="hloc">Map location (latitude, longitude)</label><input id="hloc" placeholder="-0.0917, 34.7680"><button type="button" class="ghost" id="hgeo" style="margin-top:8px">Use my current location</button></div>
     <div><label for="hp">Room price per night (KSh)</label><input id="hp" type="number" min="0" required></div>
     <div><label for="hm">Meeting space price (KSh)</label><input id="hm" type="number" min="0"></div>
     <div><label for="hr">Rating (0 to 5)</label><input id="hr" type="number" min="0" max="5" step="0.1"></div>
@@ -145,10 +157,12 @@
   </form>
 </dialog>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 <script type="module" src="app.js"></script>
 <script type="module" src="extras.js"></script>
 <script type="module" src="reviews.js"></script>
 <script type="module" src="alerts.js"></script>
+<script type="module" src="map.js"></script>
 <script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}))</script>
 </body>
   </html>
