@@ -31,12 +31,13 @@ function render() {
     const d = document.createElement('div');
     d.className = 'hotel';
     d.innerHTML = `${pic}<h2>${esc(h.name)}</h2><p>${esc(h.city)} · ★ ${rt.avg ? rt.avg.toFixed(1) : '–'}${rt.n ? ' (' + rt.n + ' review' + (rt.n > 1 ? 's' : '') + ')' : ''}<br>${esc(h.desc)}</p>
-      <p style="margin:0 0 10px"><a href="#" data-a="reviews" style="color:var(--acc)">Reviews</a></p>${contact}
+      <p style="margin:0 0 10px"><a href="#" data-a="reviews" style="color:var(--acc)">Reviews</a> · <a href="#" data-a="map" style="color:var(--acc)">Map and directions</a></p>${contact}
       <div class="row"><strong>${money(h.price)} / night</strong><div class="btns"><button class="ghost" data-a="chat">Chat</button><button class="ghost" data-a="food">Order food</button><button data-a="book">Book</button></div></div>`;
     d.querySelector('[data-a=book]').onclick = () => openBooking(h);
     d.querySelector('[data-a=food]').onclick = () => openFood(h);
     d.querySelector('[data-a=chat]').onclick = () => openChat(h);
     d.querySelector('[data-a=reviews]').onclick = e => { e.preventDefault(); if (S.openReviews) S.openReviews(h); };
+    d.querySelector('[data-a=map]').onclick = e => { e.preventDefault(); if (S.openMap) S.openMap(h); };
     list.appendChild(d);
   });
 }
