@@ -38,3 +38,9 @@ setInterval(() => {
 // ---------- PRIVACY NOTICE ----------
 $('privLink').onclick = e => { e.preventDefault(); $('privacy').showModal(); };
 $('privClose').onclick = () => $('privacy').close();
+// ---------- FILTERS BUTTON ----------
+$('filtBtn').onclick = () => {
+  const f = $('filters');
+  f.hidden = !f.hidden;
+  $('filtBtn').classList.toggle('on', !f.hidden);
+};
