@@ -60,26 +60,36 @@ async function addRecord(kind, r) {
 const today = () => new Date().toISOString().slice(0, 10);
 function bookCost() {
   const t = $('type').value.toLowerCase(), d1 = $('date').value, d2 = $('date2').value;
-  const unit = t === 'room' ? Number(chosen.price) || 0 : Number(chosen.meeting) || 5000;
+  const rm = t === 'room' ? S.roomsOf(chosen).find(r => r.type === $('rtype').value) : null;
+  const unit = t === 'room' ? (rm ? rm.price : Number(chosen.price) || 0) : Number(chosen.meeting) || 5000;
   const n = d1 && d2 ? Math.max(1, Math.round((new Date(d2) - new Date(d1)) / 86400000)) : 1;
-  return { t, n, unit, total: unit * n };
+  return { t, n, unit, total: unit * n, rm };
 }
 function drawBookTotal() {
   if (!chosen) return;
+  const rooms = S.roomsOf(chosen), isRoom = $('type').value === 'Room';
+  $('roomRow').hidden = !(isRoom && rooms.length);
   const c = bookCost(), word = c.t === 'room' ? (c.n === 1 ? 'night' : 'nights') : (c.n === 1 ? 'day' : 'days');
   $('bookTotal').textContent = `${c.n} ${word} × ${money(c.unit)} = ${money(c.total)}`;
+  let note = '';
+  if (isRoom && c.rm && $('date').value) {
+    const left = S.left(chosen, c.rm.type, $('date').value, $('date2').value);
+    note = left > 0 ? left + ' of ' + c.rm.count + ' left for these dates' : 'Fully booked for these dates';
+  }
+  $('availNote').textContent = note;
 }
 function openBooking(h) {
   if (!S.user) return askLogin();
   chosen = h;
   $('bookTitle').textContent = 'Book at ' + h.name;
   $('msg').textContent = '';
+  $('rtype').innerHTML = S.roomsOf(h).map(r => `<option value="${esc(r.type)}">${esc(r.type)} – ${money(r.price)}</option>`).join('');
   $('date').min = today(); $('date2').min = today();
   $('date').value = ''; $('date2').value = ''; $('guests').value = 1;
   drawBookTotal();
   $('book').showModal();
 }
-['type', 'date', 'date2'].forEach(id => $(id).addEventListener('change', () => {
+['type', 'rtype', 'date', 'date2'].forEach(id => $(id).addEventListener('change', () => {
   if (id === 'date') $('date2').min = $('date').value || today();
   drawBookTotal();
 }));
@@ -88,9 +98,11 @@ $('bookForm').addEventListener('submit', async e => {
   const d1 = $('date').value, d2 = $('date2').value;
   if (d2 < d1) { $('msg').textContent = 'Check-out cannot be before check-in.'; return; }
   const c = bookCost();
+  if (c.t === 'room' && c.rm && S.left(chosen, c.rm.type, d1, d2) < 1) { $('msg').textContent = 'No rooms of this type are left for those dates. Try other dates or another room type.'; return; }
   try {
-    const rec = await addRecord('bookings', { who: $('name').value.trim(), hotel: chosen.name, hotelId: chosen.id, what: c.t,
+    const rec = await addRecord('bookings', { who: $('name').value.trim(), hotel: chosen.name, hotelId: chosen.id, what: c.t, room: c.rm ? c.rm.type : '',
       date: d1, checkout: d2, guests: Number($('guests').value) || 1, nights: c.n, amount: c.total });
+    if (c.t === 'room' && c.rm) await S.holdRoom(rec, chosen);
     $('book').close();
     openPay('bookings', rec);
   } catch (err) { $('msg').textContent = 'Could not save your booking. Check your internet and try again.'; }
@@ -176,7 +188,6 @@ $('chatForm').addEventListener('submit', e => {
   $('chatIn').value = '';
 });
 $('chatClose').onclick = () => $('chat').close();
-
 // ---------- GUEST / MANAGEMENT VIEW ----------
 function view(m) {
   $('guest').hidden = m; $('mgmt').hidden = !m;
