@@ -12,6 +12,9 @@ const SAMPLE = [
   {name:'City Centre Inn', city:'Nairobi', price:5500, meeting:3000, rating:4.1, photo:'', desc:'Affordable rooms and a small meeting space.', menu:DISHES}
 ];
 let editId = null;
+const parseRooms = t => t.split('\n').map(l => l.split(',').map(s => s.trim())).filter(p => p.length >= 3 && p[0])
+  .map(p => ({ type: p[0], price: Number(p[1].replace(/[^\d.]/g, '')), count: Math.floor(Number(p[2].replace(/[^\d.]/g, ''))) }))
+  .filter(r => r.price > 0 && r.count > 0);
 const parseLoc = t => { const m = String(t || '').match(/(-?\d+(?:\.\d+)?)\s*[,;\s]\s*(-?\d+(?:\.\d+)?)/); return m && Math.abs(m[1]) <= 90 && Math.abs(m[2]) <= 180 ? { lat: Number(m[1]), lng: Number(m[2]) } : { lat: null, lng: null }; };
 const when = r => esc(r.date) + (r.checkout && r.checkout !== r.date ? ' to ' + esc(r.checkout) : '') + (r.guests ? ' · ' + esc(r.guests) + ' guest' + (r.guests > 1 ? 's' : '') : '');
 
@@ -29,6 +32,7 @@ function openHotel(h) {
   $('hp').value = h.price || ''; $('hm').value = h.meeting || '';
   $('hr').value = h.rating || ''; $('hph').value = h.photo || '';
   $('hd').value = h.desc || '';
+  $('hrooms').value = (h.rooms || []).map(r => r.type + ', ' + r.price + ', ' + r.count).join('\n');
   $('hloc').value = h.lat != null && h.lng != null ? h.lat + ', ' + h.lng : '';
   $('hmenu').value = (h.menu || []).map(m => m.n + ', ' + m.p).join('\n');
   $('hMsg').textContent = '';
@@ -39,9 +43,11 @@ export function initAdmin() {
   $('hotelClose').onclick = () => $('hotelDlg').close();
   $('hotelForm').addEventListener('submit', async e => {
     e.preventDefault();
+    const rooms = parseRooms($('hrooms').value);
     const data = {
+      rooms,
       name: $('hn').value.trim(), city: $('hc').value.trim(), phone: $('hphone').value.trim(),
-      price: Number($('hp').value) || 0, meeting: Number($('hm').value) || 5000,
+      price: rooms.length ? Math.min(...rooms.map(r => r.price)) : Number($('hp').value) || 0, meeting: Number($('hm').value) || 5000,
       rating: Number($('hr').value) || 0, photo: $('hph').value.trim(),
       desc: $('hd').value.trim(), menu: parseMenu($('hmenu').value), ...parseLoc($('hloc').value)
     };
@@ -70,14 +76,17 @@ export function drawAdmin() {
     <h2>Activity</h2>
     <div class="stats"><div><b>${D.bookings.length}</b>Bookings</div><div><b>${D.orders.length}</b>Food orders</div>
     <div><b>${money(sum(r => r.status === 'Paid'))}</b>Paid</div><div><b>${money(sum(r => r.status !== 'Paid'))}</b>Unpaid</div></div>
-    <h3>Bookings</h3>${rows(D.bookings, r => `${esc(r.who)} – ${esc(r.what)} at ${esc(r.hotel)} on ${when(r)}`)}
+    <h3>Bookings</h3>${rows(D.bookings, r => `${esc(r.who)} – ${esc(r.what)}${r.room ? ' (' + esc(r.room) + ')' : ''} at ${esc(r.hotel)} on ${when(r)}`)}
     <h3>Food orders</h3>${rows(D.orders, r => `${esc(r.items)} → ${esc(r.to)}, ${esc(r.hotel)}`)}
     <h3>Customer chats</h3><div id="chats"></div>
     ${owner ? '<p><button class="ghost" id="clr" type="button">Delete all bookings, orders and chats</button></p>' : ''}`;
 
   // booking and order status buttons
-  mv.querySelectorAll('[data-st]').forEach(b => b.onclick = () =>
-    updateDoc(doc(fs, b.dataset.k, b.dataset.id), { state: b.dataset.st }).catch(dbErr));
+  mv.querySelectorAll('[data-st]').forEach(b => b.onclick = () => {
+    updateDoc(doc(fs, b.dataset.k, b.dataset.id), { state: b.dataset.st }).catch(dbErr);
+    // a cancelled booking frees its room again
+    if (b.dataset.k === 'bookings') updateDoc(doc(fs, 'occupancy', b.dataset.id), { state: b.dataset.st }).catch(() => {});
+  });
 
   // hotels (with Edit buttons)
   const hb = $('hotelsBox');
