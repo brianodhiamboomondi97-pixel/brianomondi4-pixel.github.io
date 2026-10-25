@@ -21,7 +21,7 @@
 <p id="dbmsg" role="status" style="margin:0;padding:8px 20px;color:var(--acc)"></p>
 
 <main class="wrap" id="guest">
-    <div class="tools">
+  <div class="tools">
     <input id="search" type="search" placeholder="Search hotels or cities…" aria-label="Search hotels">
     <button class="ghost" id="filtBtn" type="button">Filters</button>
     <button class="ghost" id="allMap" type="button">Map</button>
@@ -42,6 +42,8 @@
     <div><label for="name">Your name</label><input id="name" required></div>
     <div><label for="type">What are you booking?</label>
       <select id="type"><option>Room</option><option>Meeting space</option></select></div>
+    <div id="roomRow" hidden><label for="rtype">Room type</label><select id="rtype"></select></div>
+    <p id="availNote" style="margin:0;color:var(--mut)"></p>
     <div><label for="date">Check-in date</label><input id="date" type="date" required></div>
     <div><label for="date2">Check-out date</label><input id="date2" type="date" required></div>
     <div><label for="guests">Number of guests</label><input id="guests" type="number" min="1" max="500" value="1" required></div>
@@ -149,6 +151,7 @@
     <div><label for="hc">City</label><input id="hc" required></div>
     <div><label for="hphone">Hotel phone (for Call and WhatsApp)</label><input id="hphone" type="tel" placeholder="0712 345 678"></div>
     <div><label for="hloc">Map location (latitude, longitude)</label><input id="hloc" placeholder="-0.0917, 34.7680"><button type="button" class="ghost" id="hgeo" style="margin-top:8px">Use my current location</button></div>
+    <div><label for="hrooms">Room types, one per line: type, price, how many (e.g. Double, 8500, 10)</label><textarea id="hrooms" rows="4"></textarea></div>
     <div><label for="hp">Room price per night (KSh)</label><input id="hp" type="number" min="0" required></div>
     <div><label for="hm">Meeting space price (KSh)</label><input id="hm" type="number" min="0"></div>
     <div><label for="hr">Rating (0 to 5)</label><input id="hr" type="number" min="0" max="5" step="0.1"></div>
@@ -166,6 +169,7 @@
 <script type="module" src="reviews.js"></script>
 <script type="module" src="alerts.js"></script>
 <script type="module" src="map.js"></script>
+<script type="module" src="rooms.js"></script>
 <script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}))</script>
 </body>
   </html>
