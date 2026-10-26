@@ -115,6 +115,7 @@ function openFood(h) {
   chosen = h; menu = h.menu || []; qty = menu.map(() => 0);
   $('foodTitle').textContent = 'Order food at ' + h.name;
   $('foodMsg').textContent = menu.length ? '' : 'This hotel has not added a menu yet.';
+  $('foodNote').value = '';
   drawMenu();
   $('food').showModal();
 }
@@ -124,8 +125,10 @@ function drawMenu() {
   menu.forEach((m, i) => {
     const r = document.createElement('div');
     r.className = 'menuitem';
-    r.innerHTML = `<span>${esc(m.n)}<br><small>${money(m.p)}</small></span>
-      <div class="qty"><button type="button" class="ghost">−</button><b>${qty[i]}</b><button type="button">+</button></div>`;
+    const pic = /^https:\/\//.test(m.img || '') ? `<img class="dish" src="${esc(m.img)}" alt="" loading="lazy">` : '';
+    const off = m.out ? ' disabled' : '';
+    r.innerHTML = `${pic}<span class="dtext"><b>${esc(m.n)}</b>${m.out ? ' <small class="out">Sold out</small>' : ''}<br>${m.d ? '<small>' + esc(m.d) + '</small><br>' : ''}<small>${money(m.p)}</small></span>
+      <div class="qty"><button type="button" class="ghost"${off}>−</button><b>${qty[i]}</b><button type="button"${off}>+</button></div>`;
     const [minus, plus] = r.querySelectorAll('button');
     minus.onclick = () => { if (qty[i] > 0) { qty[i]--; drawMenu(); } };
     plus.onclick = () => { qty[i]++; drawMenu(); };
@@ -137,9 +140,13 @@ $('foodForm').addEventListener('submit', async e => {
   e.preventDefault();
   const total = menu.reduce((s, m, i) => s + m.p * qty[i], 0), msg = $('foodMsg');
   if (total === 0) { msg.textContent = 'Please add at least one item.'; return; }
+  const live = (S.hotels.find(x => x.id === chosen.id) || chosen).menu || [];
+  const gone = menu.filter((m, i) => qty[i] > 0 && (live.find(x => x.n === m.n) || {}).out).map(m => m.n);
+  if (gone.length) { msg.textContent = 'Sorry, now sold out: ' + gone.join(', ') + '. Please remove it.'; return; }
   const items = menu.map((m, i) => qty[i] ? qty[i] + '× ' + m.n : '').filter(Boolean).join(', ');
   try {
-    const rec = await addRecord('orders', { hotel: chosen.name, hotelId: chosen.id, items, to: $('room').value, amount: total });
+    const rec = await addRecord('orders', { hotel: chosen.name, hotelId: chosen.id, items, to: $('room').value,
+      note: $('foodNote').value.trim().slice(0, 200), amount: total });
     $('food').close();
     openPay('orders', rec);
   } catch (err) { msg.textContent = 'Could not send the order. Check your internet and try again.'; }
