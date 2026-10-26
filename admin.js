@@ -18,11 +18,19 @@ const parseRooms = t => t.split('\n').map(l => l.split(',').map(s => s.trim())).
 const parseLoc = t => { const m = String(t || '').match(/(-?\d+(?:\.\d+)?)\s*[,;\s]\s*(-?\d+(?:\.\d+)?)/); return m && Math.abs(m[1]) <= 90 && Math.abs(m[2]) <= 180 ? { lat: Number(m[1]), lng: Number(m[2]) } : { lat: null, lng: null }; };
 const when = r => esc(r.date) + (r.checkout && r.checkout !== r.date ? ' to ' + esc(r.checkout) : '') + (r.guests ? ' · ' + esc(r.guests) + ' guest' + (r.guests > 1 ? 's' : '') : '');
 
-// "Ugali & fish, 900" per line  ->  [{n:'Ugali & fish', p:900}]
+// "Ugali & fish, 900 | description | photo link | sold out" per line
 const parseMenu = t => t.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
-  const i = l.lastIndexOf(',');
-  return i < 1 ? null : { n: l.slice(0, i).trim(), p: Number(l.slice(i + 1).replace(/[^\d.]/g, '')) };
+  const [head, desc = '', img = '', flag = ''] = l.split('|').map(s => s.trim());
+  const i = head.lastIndexOf(',');
+  if (i < 1) return null;
+  const m = { n: head.slice(0, i).trim(), p: Number(head.slice(i + 1).replace(/[^\d.]/g, '')) };
+  if (desc) m.d = desc.slice(0, 120);
+  if (/^https:\/\//.test(img)) m.img = img;
+  if (/sold/i.test(flag) || /sold/i.test(img)) m.out = true;
+  return m;
 }).filter(m => m && m.n && m.p > 0);
+const fmtDish = m => m.n + ', ' + m.p + (m.d || m.img || m.out ? ' | ' + (m.d || '') + (m.img || m.out ? ' | ' + (m.img || '') : '') + (m.out ? ' | sold out' : '') : '');
+const openStock = new Set();
 
 function openHotel(h) {
   editId = h ? h.id : null;
@@ -34,7 +42,7 @@ function openHotel(h) {
   $('hd').value = h.desc || '';
   $('hrooms').value = (h.rooms || []).map(r => r.type + ', ' + r.price + ', ' + r.count).join('\n');
   $('hloc').value = h.lat != null && h.lng != null ? h.lat + ', ' + h.lng : '';
-  $('hmenu').value = (h.menu || []).map(m => m.n + ', ' + m.p).join('\n');
+  $('hmenu').value = (h.menu || []).map(fmtDish).join('\n');
   $('hMsg').textContent = '';
   $('hotelDlg').showModal();
 }
@@ -77,7 +85,7 @@ export function drawAdmin() {
     <div class="stats"><div><b>${D.bookings.length}</b>Bookings</div><div><b>${D.orders.length}</b>Food orders</div>
     <div><b>${money(sum(r => r.status === 'Paid'))}</b>Paid</div><div><b>${money(sum(r => r.status !== 'Paid'))}</b>Unpaid</div></div>
     <h3>Bookings</h3>${rows(D.bookings, r => `${esc(r.who)} – ${esc(r.what)}${r.room ? ' (' + esc(r.room) + ')' : ''} at ${esc(r.hotel)} on ${when(r)}`)}
-    <h3>Food orders</h3>${rows(D.orders, r => `${esc(r.items)} → ${esc(r.to)}, ${esc(r.hotel)}`)}
+    <h3>Food orders</h3>${rows(D.orders, r => `${esc(r.items)} → ${esc(r.to)}, ${esc(r.hotel)}${r.note ? ' · Note: ' + esc(r.note) : ''}`)}
     <h3>Customer chats</h3><div id="chats"></div>
     ${owner ? '<p><button class="ghost" id="clr" type="button">Delete all bookings, orders and chats</button></p>' : ''}`;
 
@@ -105,6 +113,20 @@ export function drawAdmin() {
       };
       w.appendChild(x);
     }
+    // quick sold-out switches for each dish
+    const stock = document.createElement('div');
+    stock.hidden = !openStock.has(h.id); stock.style.marginTop = '10px';
+    if (!(h.menu || []).length) stock.textContent = 'No dishes yet.';
+    (h.menu || []).forEach((m, i) => {
+      const r = document.createElement('div'); r.className = 'row'; r.style.cssText = 'padding:6px 0;border-top:1px solid var(--line)';
+      const nm = document.createElement('span'); nm.textContent = m.n + (m.out ? ' (sold out)' : '');
+      const t = document.createElement('button'); t.type = 'button'; t.className = 'ghost'; t.textContent = m.out ? 'Mark available' : 'Mark sold out';
+      t.onclick = () => updateDoc(doc(fs, 'hotels', h.id), { menu: h.menu.map((x, j) => j === i ? { ...x, out: !x.out } : x) }).catch(dbErr);
+      r.append(nm, t); stock.appendChild(r);
+    });
+    const sb = document.createElement('button'); sb.className = 'ghost'; sb.type = 'button'; sb.textContent = 'Menu stock'; sb.style.cssText = 'margin:8px 0 0 8px';
+    sb.onclick = () => { stock.hidden = !stock.hidden; if (stock.hidden) openStock.delete(h.id); else openStock.add(h.id); };
+    w.appendChild(sb); w.appendChild(stock);
     hb.appendChild(w);
   });
   if ($('addH')) $('addH').onclick = () => openHotel(null);
@@ -146,4 +168,4 @@ export function drawAdmin() {
       await b.commit();
     } catch (err) { dbErr(err); }
   };
-                         }
+  }
