@@ -15,7 +15,7 @@
 <header><div class="wrap">
   <h1>Hotti<span>connect</span></h1>
   <p>Choose a hotel, then book a room, a meeting space, or order food.</p>
-  <div class="btns" style="margin-top:14px"><button class="ghost on" id="vGuest" type="button">Guest</button><button class="ghost" id="vMgmt" type="button" hidden>Management</button><button class="ghost" id="vMine" type="button" hidden>My bookings</button><button class="ghost" id="authBtn" type="button">Sign in</button></div>
+  <div class="btns" style="margin-top:14px"><button class="ghost on" id="vGuest" type="button">Guest</button><button class="ghost" id="vMgmt" type="button" hidden>Management</button><button class="ghost" id="vReq" type="button" hidden>Requests</button><button class="ghost" id="vMine" type="button" hidden>My bookings</button><button class="ghost" id="authBtn" type="button">Sign in</button></div>
   <small id="who" style="display:block;margin-top:8px;color:var(--mut)"></small>
 </div></header>
 <p id="dbmsg" role="status" style="margin:0;padding:8px 20px;color:var(--acc)"></p>
@@ -32,7 +32,7 @@
     <select id="sort" aria-label="Sort hotels"><option value="">Sort: A to Z</option><option value="price">Price: low to high</option><option value="priceDesc">Price: high to low</option><option value="rating">Best rated</option></select>
   </div>
   <div id="list"></div>
-  <p style="margin-top:24px;text-align:center"><a href="#" id="privLink" style="color:var(--mut)">Privacy notice</a></p>
+  <p style="margin-top:24px;text-align:center"><a href="#" id="privLink" style="color:var(--mut)">Privacy notice</a> · <a href="#" id="listLink" style="color:var(--mut)">List your hotel</a></p>
 </main>
 <main class="wrap" id="mgmt" hidden></main>
 
@@ -144,6 +144,28 @@
   </div>
 </dialog>
 
+<dialog id="rqDlg">
+  <form id="rqForm">
+    <h2 style="margin:0">List your hotel</h2>
+    <p style="margin:0;color:var(--mut)">Tell us about your hotel. We will review your request and set up your page and manager login.</p>
+    <div><label for="rqName">Hotel name</label><input id="rqName" required></div>
+    <div><label for="rqCity">City</label><input id="rqCity" required></div>
+    <div><label for="rqContact">Your name and role</label><input id="rqContact" placeholder="Jane Achieng, manager" required></div>
+    <div><label for="rqPhone">Phone</label><input id="rqPhone" type="tel" required></div>
+    <div><label for="rqNote">Anything else we should know?</label><textarea id="rqNote" rows="3" maxlength="500"></textarea></div>
+    <p id="rqMsg" role="status" style="color:var(--acc);margin:0;min-height:1.4em"></p>
+    <div class="row"><button type="button" class="ghost" id="rqClose">Close</button><button type="submit">Send request</button></div>
+  </form>
+</dialog>
+
+<dialog id="reqListDlg">
+  <div style="display:grid;gap:12px">
+    <h2 style="margin:0">Hotel requests</h2>
+    <div id="reqList"></div>
+    <div class="row"><button type="button" class="ghost" id="reqClose">Close</button></div>
+  </div>
+</dialog>
+
 <dialog id="hotelDlg">
   <form id="hotelForm">
     <h2 id="hotelTitle" style="margin:0">Hotel</h2>
@@ -170,6 +192,7 @@
 <script type="module" src="alerts.js"></script>
 <script type="module" src="map.js"></script>
 <script type="module" src="rooms.js"></script>
+<script type="module" src="requests.js"></script>
 <script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}))</script>
 </body>
-  </html>
+                                                    </html>
