@@ -45,7 +45,7 @@ export function initAdmin() {
     e.preventDefault();
     const rooms = parseRooms($('hrooms').value);
     const data = {
-      rooms,
+      rooms, draft: false,
       name: $('hn').value.trim(), city: $('hc').value.trim(), phone: $('hphone').value.trim(),
       price: rooms.length ? Math.min(...rooms.map(r => r.price)) : Number($('hp').value) || 0, meeting: Number($('hm').value) || 5000,
       rating: Number($('hr').value) || 0, photo: $('hph').value.trim(),
@@ -93,7 +93,7 @@ export function drawAdmin() {
   if (!mine.length) hb.textContent = owner ? 'No hotels yet. Add one, or add the sample hotels.' : 'No hotel is linked to your account yet. Ask the owner to check your staff record.';
   mine.forEach(h => {
     const w = document.createElement('div'); w.className = 'rec';
-    w.innerHTML = `<b>${esc(h.name)}</b> · ${esc(h.city)}<br><small>Hotel ID: ${esc(h.id)}<br>${(h.menu || []).length} menu items</small><br>`;
+    w.innerHTML = `<b>${esc(h.name)}</b> · ${esc(h.city)}<br><small>Hotel ID: ${esc(h.id)}<br>${(h.menu || []).length} menu items${h.draft ? '<br><b>Draft: not visible to guests until saved</b>' : ''}</small><br>`;
     const b = document.createElement('button'); b.className = 'ghost'; b.type = 'button'; b.textContent = 'Edit'; b.style.marginTop = '8px';
     b.onclick = () => openHotel(h);
     w.appendChild(b);
@@ -146,4 +146,4 @@ export function drawAdmin() {
       await b.commit();
     } catch (err) { dbErr(err); }
   };
-    }
+                         }
