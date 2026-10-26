@@ -20,7 +20,7 @@ const ratingOf = h => {
 function render() {
   const q = $('search').value.toLowerCase(), c = $('city').value, list = $('list');
   const max = Number($('maxp').value) || Infinity, sort = $('sort').value;
-  const shown = S.hotels.filter(h => (!c || h.city === c) && (Number(h.price) || 0) <= max && ((h.name || '') + ' ' + (h.city || '')).toLowerCase().includes(q));
+  const shown = S.hotels.filter(h => !h.draft && (!c || h.city === c) && (Number(h.price) || 0) <= max && ((h.name || '') + ' ' + (h.city || '')).toLowerCase().includes(q));
   const sorters = { price: (a, b) => a.price - b.price, priceDesc: (a, b) => b.price - a.price, rating: (a, b) => ratingOf(b).avg - ratingOf(a).avg };
   if (sorters[sort]) shown.sort(sorters[sort]);
   list.innerHTML = shown.length ? '' : '<p>No hotels match. Try changing the filters.</p>';
