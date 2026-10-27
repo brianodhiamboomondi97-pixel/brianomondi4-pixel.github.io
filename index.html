@@ -44,6 +44,7 @@
       <select id="type"><option>Room</option><option>Meeting space</option></select></div>
     <div id="roomRow" hidden><label for="rtype">Room type</label><select id="rtype"></select><button type="button" class="ghost" id="calBtn" style="margin-top:8px">See booked dates</button></div>
     <p id="availNote" style="margin:0;color:var(--mut)"></p>
+    <div id="rnoRow" hidden><label for="rno">Room number</label><select id="rno"></select></div>
     <div><label for="date">Check-in date</label><input id="date" type="date" required></div>
     <div><label for="date2">Check-out date</label><input id="date2" type="date" required></div>
     <div><label for="guests">Number of guests</label><input id="guests" type="number" min="1" max="500" value="1" required></div>
@@ -59,6 +60,7 @@
     <select id="calType" aria-label="Room type"></select>
     <div class="row"><button type="button" class="ghost" id="calPrev">‹ Previous</button><button type="button" class="ghost" id="calNext">Next ›</button></div>
     <div id="calGrid" class="cal"></div>
+    <p id="calNote" style="margin:0;color:var(--mut);font-size:14px;min-height:1.4em"></p>
     <p style="margin:0;color:var(--mut);font-size:13px"><span class="sw full"></span> fully booked &nbsp; <span class="sw some"></span> some booked &nbsp; <span class="sw"></span> available</p>
     <div class="row"><button type="button" class="ghost" id="calClose">Close</button></div>
   </div>
@@ -186,7 +188,7 @@
     <div><label for="hc">City</label><input id="hc" required></div>
     <div><label for="hphone">Hotel phone (for Call and WhatsApp)</label><input id="hphone" type="tel" placeholder="0712 345 678"></div>
     <div><label for="hloc">Map location (latitude, longitude)</label><input id="hloc" placeholder="-0.0917, 34.7680"><button type="button" class="ghost" id="hgeo" style="margin-top:8px">Use my current location</button></div>
-    <div><label for="hrooms">Room types, one per line: type, price, how many (e.g. Double, 8500, 10)</label><textarea id="hrooms" rows="4"></textarea></div>
+    <div><label for="hrooms">Room types, one per line: type, price, then how many (10) or the room numbers (101-110 or 101 102 105)</label><textarea id="hrooms" rows="4"></textarea></div>
     <div><label for="hp">Room price per night (KSh), only needed if you don't list room types above</label><input id="hp" type="number" min="0"></div>
     <div><label for="hm">Meeting space price (KSh)</label><input id="hm" type="number" min="0"></div>
     <div><label for="hr">Rating (0 to 5)</label><input id="hr" type="number" min="0" max="5" step="0.1"></div>
@@ -209,4 +211,4 @@
 <script type="module" src="calendar.js"></script>
 <script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}))</script>
 </body>
-                                                                                                                                                                                    </html>
+      </html>
