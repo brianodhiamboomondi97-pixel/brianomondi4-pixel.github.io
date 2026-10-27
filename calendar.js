@@ -24,8 +24,14 @@ function draw() {
     if (s < today) c.classList.add('past');
     else if (left <= 0) { c.classList.add('full'); c.title = 'Fully booked'; }
     else if (left < rm.count) { c.classList.add('some'); c.title = left + ' of ' + rm.count + ' left'; }
+    if (rm && s >= today) c.onclick = () => {
+      const free = S.freeNums(hotel, type, s, nx), taken = rm.nums.filter(n => !free.includes(n));
+      $('calNote').textContent = s + ': ' + free.length + ' of ' + rm.count + ' free' +
+        (rm.named ? (free.length ? ' · Free: ' + free.join(', ') : '') + (taken.length ? ' · Booked: ' + taken.join(', ') : '') : '');
+    };
     g.appendChild(c);
   }
+  $('calNote').textContent = rm && rm.named ? 'Tap a day to see which room numbers are free.' : '';
 }
 
 $('calBtn').onclick = () => {
