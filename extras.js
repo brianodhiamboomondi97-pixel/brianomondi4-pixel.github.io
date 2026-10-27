@@ -19,7 +19,7 @@ function draw() {
   const mine = [...S.DB.bookings.map(r => ({ ...r, kind: 'booking' })), ...S.DB.orders.map(r => ({ ...r, kind: 'order' }))]
     .filter(r => r.uid === me).sort((a, b) => (b.created || 0) - (a.created || 0));
   $('mineList').innerHTML = mine.length ? mine.map(r => `<div class="rec"><b>${r.kind === 'booking'
-      ? esc(r.what) + ' at ' + esc(r.hotel) + ' on ' + when(r)
+      ? esc(r.what) + (r.roomNo ? ' (Room ' + esc(r.roomNo) + ')' : '') + ' at ' + esc(r.hotel) + ' on ' + when(r)
       : esc(r.items) + ' · ' + esc(r.hotel)}</b><br><small>${esc(r.time)} · ${money(r.amount)}<br>Status: <b>${esc(r.state || (r.kind === 'order' ? 'Received' : 'Pending'))}</b> · Payment: <b>${esc(r.status)}</b></small></div>`).join('')
     : '<p>You have no bookings or orders yet.</p>';
 }
@@ -38,6 +38,7 @@ setInterval(() => {
 // ---------- PRIVACY NOTICE ----------
 $('privLink').onclick = e => { e.preventDefault(); $('privacy').showModal(); };
 $('privClose').onclick = () => $('privacy').close();
+
 // ---------- FILTERS BUTTON ----------
 $('filtBtn').onclick = () => {
   const f = $('filters');
