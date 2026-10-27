@@ -1,28 +1,49 @@
-import { collection, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { collection, doc, onSnapshot, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { fs, S, dbErr } from "./shared.js";
 
-// "occupancy" holds only which room type is taken on which dates (no personal details),
-// so every guest can check availability.
+// "occupancy" has one small record per room per night (no personal details),
+// so every guest can see which rooms are taken, and two guests can never get the same room.
 S.occ = [];
-onSnapshot(collection(fs, 'occupancy'), snap => { S.occ = snap.docs.map(d => d.data()); }, dbErr);
+onSnapshot(collection(fs, 'occupancy'), snap => { S.occ = snap.docs.map(d => d.data()).filter(o => o.night); }, dbErr);
 
-S.roomsOf = h => Array.isArray(h.rooms) ? h.rooms.filter(r => r && r.type && r.price > 0 && r.count > 0) : [];
+// every room type has a list of room numbers. If the hotel only gave a count, the numbers are 1, 2, 3...
+S.roomsOf = h => (Array.isArray(h.rooms) ? h.rooms : []).map(r => {
+  const named = Array.isArray(r.nums) && r.nums.length > 0;
+  const nums = named ? r.nums.map(String) : Array.from({ length: Number(r.count) || 0 }, (_, i) => String(i + 1));
+  return { type: r.type, price: Number(r.price), nums, count: nums.length, named };
+}).filter(r => r.type && r.price > 0 && r.count > 0);
 
 const addDay = s => { const d = new Date(s); d.setDate(d.getDate() + 1); return d.toISOString().slice(0, 10); };
-const endOf = (a, b) => b && b > a ? b : addDay(a);   // a same-day booking counts as one night
 
-// how many rooms of this type are free between d1 and d2
-S.left = (h, type, d1, d2) => {
-  const rm = S.roomsOf(h).find(r => r.type === type);
-  if (!rm) return 0;
-  if (!d1) return rm.count;
-  const e1 = endOf(d1, d2);
-  const used = S.occ.filter(o => o.hotelId === h.id && o.room === type && o.state !== 'Cancelled'
-    && o.checkin < e1 && d1 < endOf(o.checkin, o.checkout)).length;
-  return Math.max(0, rm.count - used);
+// the nights of a stay: check-in up to (not including) check-out; a same-day stay counts as one night
+S.nightsOf = (d1, d2) => {
+  const out = [], end = d2 && d2 > d1 ? d2 : addDay(d1);
+  for (let d = d1; d < end; d = addDay(d)) out.push(d);
+  return out;
 };
 
-// reserve the room for the booking's dates
-S.holdRoom = (rec, h) => setDoc(doc(fs, 'occupancy', rec.id), {
-  hotelId: h.id, room: rec.room, checkin: rec.date, checkout: rec.checkout, state: 'Pending', uid: rec.uid, created: Date.now()
-}).catch(dbErr);
+// room numbers of this type that are free on every night of the stay
+S.freeNums = (h, type, d1, d2) => {
+  const rm = S.roomsOf(h).find(r => r.type === type);
+  if (!rm) return [];
+  if (!d1) return rm.nums;
+  const ns = S.nightsOf(d1, d2);
+  const taken = new Set(S.occ.filter(o => o.hotelId === h.id && o.room === type && ns.includes(o.night)).map(o => o.roomNo));
+  return rm.nums.filter(n => !taken.has(n));
+};
+S.left = (h, type, d1, d2) => S.freeNums(h, type, d1, d2).length;
+
+// save the booking and reserve each night of the room in one step. If any night is already
+// taken, the whole thing fails and nothing is saved.
+S.createBooking = async (h, rec, nights) => {
+  const ref = doc(collection(fs, 'bookings'));
+  Object.assign(rec, { uid: S.user.uid, email: S.user.email, status: 'Unpaid', time: new Date().toLocaleString(), created: Date.now() });
+  const b = writeBatch(fs);
+  b.set(ref, rec);
+  nights.forEach(n => b.set(doc(fs, 'occupancy', h.id + '_' + rec.slot + '_' + n), {
+    hotelId: h.id, room: rec.room, roomNo: rec.slot, night: n, bookingId: ref.id, uid: S.user.uid, created: Date.now()
+  }));
+  await b.commit();
+  rec.id = ref.id;
+  return rec;
+};
