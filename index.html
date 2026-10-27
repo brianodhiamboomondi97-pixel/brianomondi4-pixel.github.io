@@ -42,7 +42,7 @@
     <div><label for="name">Your name</label><input id="name" required></div>
     <div><label for="type">What are you booking?</label>
       <select id="type"><option>Room</option><option>Meeting space</option></select></div>
-    <div id="roomRow" hidden><label for="rtype">Room type</label><select id="rtype"></select></div>
+    <div id="roomRow" hidden><label for="rtype">Room type</label><select id="rtype"></select><button type="button" class="ghost" id="calBtn" style="margin-top:8px">See booked dates</button></div>
     <p id="availNote" style="margin:0;color:var(--mut)"></p>
     <div><label for="date">Check-in date</label><input id="date" type="date" required></div>
     <div><label for="date2">Check-out date</label><input id="date2" type="date" required></div>
@@ -51,6 +51,17 @@
     <p id="msg" role="status"></p>
     <div class="row"><button type="button" class="ghost" id="close">Close</button><button type="submit">Confirm booking</button></div>
   </form>
+</dialog>
+
+<dialog id="calDlg">
+  <div style="display:grid;gap:10px">
+    <h2 id="calTitle" style="margin:0">Availability</h2>
+    <select id="calType" aria-label="Room type"></select>
+    <div class="row"><button type="button" class="ghost" id="calPrev">‹ Previous</button><button type="button" class="ghost" id="calNext">Next ›</button></div>
+    <div id="calGrid" class="cal"></div>
+    <p style="margin:0;color:var(--mut);font-size:13px"><span class="sw full"></span> fully booked &nbsp; <span class="sw some"></span> some booked &nbsp; <span class="sw"></span> available</p>
+    <div class="row"><button type="button" class="ghost" id="calClose">Close</button></div>
+  </div>
 </dialog>
 
 <dialog id="food">
@@ -195,6 +206,7 @@
 <script type="module" src="map.js"></script>
 <script type="module" src="rooms.js"></script>
 <script type="module" src="requests.js"></script>
+<script type="module" src="calendar.js"></script>
 <script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}))</script>
 </body>
-                               </html>
+                                                                                                                                                                                    </html>
