@@ -25,7 +25,8 @@ function render() {
   if (sorters[sort]) shown.sort(sorters[sort]);
   list.innerHTML = shown.length ? '' : '<p>No hotels match. Try changing the filters.</p>';
   shown.forEach(h => {
-    const pic = /^https:\/\//.test(h.photo || '') ? `<img class="photo" src="${esc(h.photo)}" alt="" loading="lazy">` : '';
+    const gal = [h.photo, ...(Array.isArray(h.photos) ? h.photos : [])].filter(u => /^https:\/\//.test(u || ''));
+    const pic = gal.length ? `<div class="galwrap"><div class="gal">${gal.map(u => `<img class="photo" src="${esc(u)}" alt="" loading="lazy">`).join('')}</div>${gal.length > 1 ? `<span class="gcount">1 / ${gal.length}</span>` : ''}</div>` : '';
     const n = intl(h.phone), rt = ratingOf(h);
     const call = n ? `<a class="ghost" href="tel:+${n}">Call</a>` : '';
     const wa = n ? `<a class="ghost" href="https://wa.me/${n}" target="_blank" rel="noopener">WhatsApp</a>` : '';
@@ -34,6 +35,8 @@ function render() {
     d.innerHTML = `${pic}<h2>${esc(h.name)}</h2><p>${esc(h.city)} · ★ ${rt.avg ? rt.avg.toFixed(1) : '–'}${rt.n ? ' (' + rt.n + ' review' + (rt.n > 1 ? 's' : '') + ')' : ''}<br>${esc(h.desc)}</p>
       <div class="row"><strong>${money(h.price)} <small style="font-weight:400;color:var(--mut)">/ night</small></strong><div class="cta"><button class="ghost" data-a="more" aria-expanded="false">More</button><button data-a="book">Book</button></div></div>
       <div class="more" hidden><button class="ghost" data-a="chat">Chat</button><button class="ghost" data-a="food">Order food</button><a class="ghost" href="#" data-a="reviews">Reviews</a><a class="ghost" href="#" data-a="map">Map</a>${call}${wa}</div>`;
+    const gEl = d.querySelector('.gal'), gc = d.querySelector('.gcount');
+    if (gEl && gc) gEl.onscroll = () => { gc.textContent = (Math.round(gEl.scrollLeft / gEl.clientWidth) + 1) + ' / ' + gal.length; };
     const more = d.querySelector('.more'), mb = d.querySelector('[data-a=more]');
     mb.onclick = () => { more.hidden = !more.hidden; mb.textContent = more.hidden ? 'More' : 'Less'; mb.setAttribute('aria-expanded', String(!more.hidden)); };
     d.querySelector('[data-a=book]').onclick = () => openBooking(h);
