@@ -12,9 +12,24 @@ const SAMPLE = [
   {name:'City Centre Inn', city:'Nairobi', price:5500, meeting:3000, rating:4.1, photo:'', desc:'Affordable rooms and a small meeting space.', menu:DISHES}
 ];
 let editId = null;
+// room numbers: "101-110" or "101 102 105"
+const parseNums = t => {
+  const out = [];
+  t.split(/[\s;]+/).filter(Boolean).forEach(tok => {
+    const m = tok.match(/^(\d+)-(\d+)$/);
+    if (m && Number(m[2]) >= Number(m[1]) && Number(m[2]) - Number(m[1]) < 500) { for (let i = Number(m[1]); i <= Number(m[2]); i++) out.push(String(i)); }
+    else if (/^[A-Za-z0-9-]+$/.test(tok)) out.push(tok);
+  });
+  return [...new Set(out)];
+};
+// "Double, 8500, 10"  or  "Double, 8500, 101-110"  or  "Double, 8500, 101 102 105"
 const parseRooms = t => t.split('\n').map(l => l.split(',').map(s => s.trim())).filter(p => p.length >= 3 && p[0])
-  .map(p => ({ type: p[0], price: Number(p[1].replace(/[^\d.]/g, '')), count: Math.floor(Number(p[2].replace(/[^\d.]/g, ''))) }))
-  .filter(r => r.price > 0 && r.count > 0);
+  .map(p => {
+    const price = Number(p[1].replace(/[^\d.]/g, '')), rest = p.slice(2).join(' ');
+    if (/^\d+$/.test(rest)) return { type: p[0], price, count: Math.floor(Number(rest)) };
+    const nums = parseNums(rest);
+    return { type: p[0], price, count: nums.length, nums };
+  }).filter(r => r.price > 0 && r.count > 0);
 const parseLoc = t => { const m = String(t || '').match(/(-?\d+(?:\.\d+)?)\s*[,;\s]\s*(-?\d+(?:\.\d+)?)/); return m && Math.abs(m[1]) <= 90 && Math.abs(m[2]) <= 180 ? { lat: Number(m[1]), lng: Number(m[2]) } : { lat: null, lng: null }; };
 const when = r => esc(r.date) + (r.checkout && r.checkout !== r.date ? ' to ' + esc(r.checkout) : '') + (r.guests ? ' · ' + esc(r.guests) + ' guest' + (r.guests > 1 ? 's' : '') : '');
 
@@ -40,7 +55,7 @@ function openHotel(h) {
   $('hp').value = h.price || ''; $('hm').value = h.meeting || '';
   $('hr').value = h.rating || ''; $('hph').value = h.photo || '';
   $('hd').value = h.desc || '';
-  $('hrooms').value = (h.rooms || []).map(r => r.type + ', ' + r.price + ', ' + r.count).join('\n');
+  $('hrooms').value = (h.rooms || []).map(r => r.type + ', ' + r.price + ', ' + (r.nums && r.nums.length ? r.nums.join(' ') : r.count)).join('\n');
   $('hloc').value = h.lat != null && h.lng != null ? h.lat + ', ' + h.lng : '';
   $('hmenu').value = (h.menu || []).map(fmtDish).join('\n');
   $('hMsg').textContent = '';
@@ -74,7 +89,7 @@ export function drawAdmin() {
   const sum = f => all.filter(f).reduce((s, r) => s + (r.amount || 0), 0);
   const rows = (a, f) => a.length ? a.slice().reverse().map(r => {
     const kind = r.items !== undefined ? 'orders' : 'bookings';
-    const opts = kind === 'orders' ? ['Preparing', 'Delivered'] : ['Confirmed', 'Cancelled'];
+    const opts = kind === 'orders' ? ['Preparing', 'Delivered'] : (r.state === 'Cancelled' ? [] : ['Confirmed', 'Cancelled']);
     const btns = opts.map(o => `<button class="ghost" type="button" data-k="${kind}" data-id="${esc(r.id)}" data-st="${o}">${o}</button>`).join('');
     return `<div class="rec"><b>${f(r)}</b><br><small>${esc(r.time)} · ${money(r.amount)} · ${esc(r.status)}${r.method ? ' (' + esc(r.method) + ')' : ''} · <b>${esc(r.state || (kind === 'orders' ? 'Received' : 'Pending'))}</b></small><div class="btns" style="margin-top:8px">${btns}</div></div>`;
   }).join('') : '<p>Nothing yet.</p>';
@@ -84,7 +99,7 @@ export function drawAdmin() {
     <h2>Activity</h2>
     <div class="stats"><div><b>${D.bookings.length}</b>Bookings</div><div><b>${D.orders.length}</b>Food orders</div>
     <div><b>${money(sum(r => r.status === 'Paid'))}</b>Paid</div><div><b>${money(sum(r => r.status !== 'Paid'))}</b>Unpaid</div></div>
-    <h3>Bookings</h3>${rows(D.bookings, r => `${esc(r.who)} – ${esc(r.what)}${r.room ? ' (' + esc(r.room) + ')' : ''} at ${esc(r.hotel)} on ${when(r)}`)}
+    <h3>Bookings</h3>${rows(D.bookings, r => `${esc(r.who)} – ${esc(r.what)}${r.room ? ' (' + esc(r.room) + (r.roomNo ? ' · Room ' + esc(r.roomNo) : '') + ')' : ''} at ${esc(r.hotel)} on ${when(r)}`)}
     <h3>Food orders</h3>${rows(D.orders, r => `${esc(r.items)} → ${esc(r.to)}, ${esc(r.hotel)}${r.note ? ' · Note: ' + esc(r.note) : ''}`)}
     <h3>Customer chats</h3><div id="chats"></div>
     ${owner ? '<p><button class="ghost" id="clr" type="button">Delete all bookings, orders and chats</button></p>' : ''}`;
@@ -93,7 +108,10 @@ export function drawAdmin() {
   mv.querySelectorAll('[data-st]').forEach(b => b.onclick = () => {
     updateDoc(doc(fs, b.dataset.k, b.dataset.id), { state: b.dataset.st }).catch(dbErr);
     // a cancelled booking frees its room again
-    if (b.dataset.k === 'bookings') updateDoc(doc(fs, 'occupancy', b.dataset.id), { state: b.dataset.st }).catch(() => {});
+    if (b.dataset.k === 'bookings' && b.dataset.st === 'Cancelled') {
+      const r = D.bookings.find(x => x.id === b.dataset.id);
+      if (r && r.slot) S.nightsOf(r.date, r.checkout).forEach(n => deleteDoc(doc(fs, 'occupancy', r.hotelId + '_' + r.slot + '_' + n)).catch(() => {}));
+    }
   });
 
   // hotels (with Edit buttons)
@@ -101,7 +119,13 @@ export function drawAdmin() {
   if (!mine.length) hb.textContent = owner ? 'No hotels yet. Add one, or add the sample hotels.' : 'No hotel is linked to your account yet. Ask the owner to check your staff record.';
   mine.forEach(h => {
     const w = document.createElement('div'); w.className = 'rec';
-    w.innerHTML = `<b>${esc(h.name)}</b> · ${esc(h.city)}<br><small>Hotel ID: ${esc(h.id)}<br>${(h.menu || []).length} menu items${h.draft ? '<br><b>Draft: not visible to guests until saved</b>' : ''}</small><br>`;
+    const t0 = new Date().toISOString().slice(0, 10);
+    const rt = S.roomsOf(h).map(rm => {
+      const free = S.freeNums(h, rm.type, t0, null), taken = rm.nums.filter(n => !free.includes(n));
+      return '<small>' + esc(rm.type) + ' today: ' + free.length + ' free' + (rm.named ? ' (' + (esc(free.join(', ')) || 'none') + ')' : '') +
+        (taken.length ? ' · booked: ' + (rm.named ? esc(taken.join(', ')) : taken.length) : '') + '</small>';
+    }).join('<br>');
+    w.innerHTML = `<b>${esc(h.name)}</b> · ${esc(h.city)}<br><small>Hotel ID: ${esc(h.id)}<br>${(h.menu || []).length} menu items${h.draft ? '<br><b>Draft: not visible to guests until saved</b>' : ''}</small>${rt ? '<br>' + rt : ''}<br>`;
     const b = document.createElement('button'); b.className = 'ghost'; b.type = 'button'; b.textContent = 'Edit'; b.style.marginTop = '8px';
     b.onclick = () => openHotel(h);
     w.appendChild(b);
@@ -168,4 +192,4 @@ export function drawAdmin() {
       await b.commit();
     } catch (err) { dbErr(err); }
   };
-  }
+       }
