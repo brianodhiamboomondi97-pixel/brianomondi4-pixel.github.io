@@ -71,11 +71,24 @@ function drawBookTotal() {
   $('roomRow').hidden = !(isRoom && rooms.length);
   const c = bookCost(), word = c.t === 'room' ? (c.n === 1 ? 'night' : 'nights') : (c.n === 1 ? 'day' : 'days');
   $('bookTotal').textContent = `${c.n} ${word} × ${money(c.unit)} = ${money(c.total)}`;
-  let note = '';
-  if (isRoom && c.rm && $('date').value) {
-    const left = S.left(chosen, c.rm.type, $('date').value, $('date2').value);
-    note = left > 0 ? left + ' of ' + c.rm.count + ' left for these dates' : 'Fully booked for these dates';
+  const d1 = $('date').value, d2 = $('date2').value;
+  let note = '', showNo = false;
+  if (isRoom && c.rm) {
+    if (!d1) note = 'Choose your dates to see which rooms are free.';
+    else {
+      const free = S.freeNums(chosen, c.rm.type, d1, d2), taken = c.rm.nums.filter(n => !free.includes(n));
+      note = free.length ? free.length + ' of ' + c.rm.count + ' rooms free' : 'Fully booked for these dates';
+      if (c.rm.named) {
+        if (free.length) note += ' · Free: ' + free.join(', ');
+        if (taken.length) note += ' · Booked: ' + taken.join(', ');
+        const cur = $('rno').value;
+        $('rno').innerHTML = '<option value="">Any available room</option>' + free.map(n => `<option value="${esc(n)}">Room ${esc(n)}</option>`).join('');
+        if (free.includes(cur)) $('rno').value = cur;
+        showNo = free.length > 0;
+      }
+    }
   }
+  $('rnoRow').hidden = !showNo;
   $('availNote').textContent = note;
 }
 function openBooking(h) {
@@ -84,6 +97,7 @@ function openBooking(h) {
   $('bookTitle').textContent = 'Book at ' + h.name;
   $('msg').textContent = '';
   $('rtype').innerHTML = S.roomsOf(h).map(r => `<option value="${esc(r.type)}">${esc(r.type)} – ${money(r.price)}</option>`).join('');
+  $('rno').innerHTML = '';
   $('date').min = today(); $('date2').min = today();
   $('date').value = ''; $('date2').value = ''; $('guests').value = 1;
   drawBookTotal();
@@ -95,17 +109,28 @@ function openBooking(h) {
 }));
 $('bookForm').addEventListener('submit', async e => {
   e.preventDefault();
-  const d1 = $('date').value, d2 = $('date2').value;
-  if (d2 < d1) { $('msg').textContent = 'Check-out cannot be before check-in.'; return; }
+  const d1 = $('date').value, d2 = $('date2').value, msg = $('msg');
+  if (d2 < d1) { msg.textContent = 'Check-out cannot be before check-in.'; return; }
   const c = bookCost();
-  if (c.t === 'room' && c.rm && S.left(chosen, c.rm.type, d1, d2) < 1) { $('msg').textContent = 'No rooms of this type are left for those dates. Try other dates or another room type.'; return; }
+  if (c.n > 60) { msg.textContent = 'Please book 60 nights or fewer at a time.'; return; }
+  const base = { who: $('name').value.trim(), hotel: chosen.name, hotelId: chosen.id, what: c.t, room: c.rm ? c.rm.type : '',
+    date: d1, checkout: d2, guests: Number($('guests').value) || 1, nights: c.n, amount: c.total };
   try {
-    const rec = await addRecord('bookings', { who: $('name').value.trim(), hotel: chosen.name, hotelId: chosen.id, what: c.t, room: c.rm ? c.rm.type : '',
-      date: d1, checkout: d2, guests: Number($('guests').value) || 1, nights: c.n, amount: c.total });
-    if (c.t === 'room' && c.rm) await S.holdRoom(rec, chosen);
+    let rec;
+    if (c.t === 'room' && c.rm) {
+      const free = S.freeNums(chosen, c.rm.type, d1, d2);
+      if (!free.length) { msg.textContent = 'No rooms of this type are left for those dates. Try other dates or another room type.'; return; }
+      base.slot = free.includes($('rno').value) ? $('rno').value : free[0];
+      if (c.rm.named) base.roomNo = base.slot;
+      rec = await S.createBooking(chosen, base, S.nightsOf(d1, d2));
+      if (rec.roomNo) rec.hotel = chosen.name + ' (Room ' + rec.roomNo + ')';   // shown in the payment window
+    } else rec = await addRecord('bookings', base);
     $('book').close();
     openPay('bookings', rec);
-  } catch (err) { $('msg').textContent = 'Could not save your booking. Check your internet and try again.'; }
+  } catch (err) {
+    msg.textContent = err && err.code === 'permission-denied' ? 'That room was just booked by someone else. Please choose again.' : 'Could not save your booking. Check your internet and try again.';
+    drawBookTotal();
+  }
 });
 $('close').onclick = () => $('book').close();
 
