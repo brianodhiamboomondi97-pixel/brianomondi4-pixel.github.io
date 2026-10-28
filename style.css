@@ -87,3 +87,8 @@ form input,form select,form textarea{width:100%}
 .sw{display:inline-block;width:12px;height:12px;border-radius:3px;border:1px solid var(--line);background:#fff;vertical-align:-1px}
 .sw.some{background:#fff4d6}
 .sw.full{background:#fde2e0}
+.galwrap{position:relative}
+.gal{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
+.gal::-webkit-scrollbar{display:none}
+.gal .photo{flex:none;width:100%;scroll-snap-align:start}
+.gcount{position:absolute;right:10px;bottom:10px;background:rgba(16,24,40,.7);color:#fff;font-size:12px;padding:3px 10px;border-radius:999px}
