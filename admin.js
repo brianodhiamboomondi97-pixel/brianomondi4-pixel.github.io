@@ -46,6 +46,7 @@ const parseMenu = t => t.split('\n').map(l => l.trim()).filter(Boolean).map(l =>
 }).filter(m => m && m.n && m.p > 0);
 const fmtDish = m => m.n + ', ' + m.p + (m.d || m.img || m.out ? ' | ' + (m.d || '') + (m.img || m.out ? ' | ' + (m.img || '') : '') + (m.out ? ' | sold out' : '') : '');
 const openStock = new Set();
+const parsePhotos = t => [...new Set(t.split(/[\n\s]+/).map(s => s.trim()).filter(s => /^https:\/\//.test(s)))].slice(0, 10);
 
 function openHotel(h) {
   editId = h ? h.id : null;
@@ -55,6 +56,7 @@ function openHotel(h) {
   $('hp').value = h.price || ''; $('hm').value = h.meeting || '';
   $('hr').value = h.rating || ''; $('hph').value = h.photo || '';
   $('hd').value = h.desc || '';
+  $('hphotos').value = (h.photos || []).join('\n');
   $('hrooms').value = (h.rooms || []).map(r => r.type + ', ' + r.price + ', ' + (r.nums && r.nums.length ? r.nums.join(' ') : r.count)).join('\n');
   $('hloc').value = h.lat != null && h.lng != null ? h.lat + ', ' + h.lng : '';
   $('hmenu').value = (h.menu || []).map(fmtDish).join('\n');
@@ -68,7 +70,7 @@ export function initAdmin() {
     e.preventDefault();
     const rooms = parseRooms($('hrooms').value);
     const data = {
-      rooms, draft: false,
+      rooms, draft: false, photos: parsePhotos($('hphotos').value),
       name: $('hn').value.trim(), city: $('hc').value.trim(), phone: $('hphone').value.trim(),
       price: rooms.length ? Math.min(...rooms.map(r => r.price)) : Number($('hp').value) || 0, meeting: Number($('hm').value) || 5000,
       rating: Number($('hr').value) || 0, photo: $('hph').value.trim(),
@@ -192,4 +194,4 @@ export function drawAdmin() {
       await b.commit();
     } catch (err) { dbErr(err); }
   };
-       }
+  }
