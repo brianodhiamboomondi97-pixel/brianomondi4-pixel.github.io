@@ -177,7 +177,22 @@
   <div style="display:grid;gap:12px">
     <h2 style="margin:0">Hotel requests</h2>
     <div id="reqList"></div>
+    <button type="button" id="asBtn">Assign a manager</button>
     <div class="row"><button type="button" class="ghost" id="reqClose">Close</button></div>
+  </div>
+</dialog>
+
+<dialog id="asDlg">
+  <div style="display:grid;gap:12px">
+    <h2 style="margin:0">Hotel managers</h2>
+    <form id="asForm">
+      <div><label for="asHotel">Hotel</label><select id="asHotel"></select></div>
+      <div><label for="asEmail">Manager's email</label><input id="asEmail" type="email" required></div>
+      <p id="asMsg" role="status" style="color:var(--acc);margin:0;min-height:1.4em"></p>
+      <button type="submit">Assign manager</button>
+    </form>
+    <div id="asList"></div>
+    <div class="row"><button type="button" class="ghost" id="asClose">Close</button></div>
   </div>
 </dialog>
 
@@ -209,6 +224,7 @@
 <script type="module" src="rooms.js"></script>
 <script type="module" src="requests.js"></script>
 <script type="module" src="calendar.js"></script>
+<script type="module" src="assign.js"></script>
 <script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}))</script>
 </body>
-      </html>
+                                                                                                                         </html>
