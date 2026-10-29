@@ -12,21 +12,24 @@ const SAMPLE = [
   {name:'City Centre Inn', city:'Nairobi', price:5500, meeting:3000, rating:4.1, photo:'', desc:'Affordable rooms and a small meeting space.', menu:DISHES}
 ];
 let editId = null;
-// room numbers: "101-110" or "101 102 105"
+// room numbers: "101-110" is a range, "101-102-103" or "101 102 105" are lists
 const parseNums = t => {
   const out = [];
   t.split(/[\s;]+/).filter(Boolean).forEach(tok => {
     const m = tok.match(/^(\d+)-(\d+)$/);
     if (m && Number(m[2]) >= Number(m[1]) && Number(m[2]) - Number(m[1]) < 500) { for (let i = Number(m[1]); i <= Number(m[2]); i++) out.push(String(i)); }
+    else if (/^\d+(-\d+)+$/.test(tok)) out.push(...tok.split('-'));
     else if (/^[A-Za-z0-9-]+$/.test(tok)) out.push(tok);
   });
   return [...new Set(out)];
 };
-// "Double, 8500, 10"  or  "Double, 8500, 101-110"  or  "Double, 8500, 101 102 105"
+// "Double, 8500, 10"  or  "Double, 8500, 101-110"  or  "Double, 8500, 5, 101 102 103 104 105"
 const parseRooms = t => t.split('\n').map(l => l.split(',').map(s => s.trim())).filter(p => p.length >= 3 && p[0])
   .map(p => {
-    const price = Number(p[1].replace(/[^\d.]/g, '')), rest = p.slice(2).join(' ');
-    if (/^\d+$/.test(rest)) return { type: p[0], price, count: Math.floor(Number(rest)) };
+    const price = Number(p[1].replace(/[^\d.]/g, ''));
+    const hasCount = p.length >= 4 && /^\d+$/.test(p[2]);   // a count written before the numbers is not a room
+    const rest = p.slice(hasCount ? 3 : 2).join(' ');
+    if (!hasCount && /^\d+$/.test(rest)) return { type: p[0], price, count: Math.floor(Number(rest)) };
     const nums = parseNums(rest);
     return { type: p[0], price, count: nums.length, nums };
   }).filter(r => r.price > 0 && r.count > 0);
@@ -69,6 +72,8 @@ export function initAdmin() {
   $('hotelForm').addEventListener('submit', async e => {
     e.preventDefault();
     const rooms = parseRooms($('hrooms').value);
+    const named = rooms.filter(r => r.nums);
+    if (named.length && !confirm('Save these rooms?\n' + named.map(r => r.type + ': ' + r.nums.join(', ')).join('\n'))) return;
     const data = {
       rooms, draft: false, photos: parsePhotos($('hphotos').value),
       name: $('hn').value.trim(), city: $('hc').value.trim(), phone: $('hphone').value.trim(),
